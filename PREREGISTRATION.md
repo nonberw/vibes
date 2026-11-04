@@ -169,4 +169,31 @@ log10(N) and log10(params).
 
 ## Deviations
 
-(none yet)
+All entries below were made before any confirmatory metric was computed on test, gsweep or OOD
+splits.
+
+**2026-11-05, pilot and compute (training hyperparameters only).** The GPU (4 GB) is shared with
+other jobs, which slowed training by up to 10x. To fit the grid:
+- batch 16, 8,000 AdamW steps (lr 1e-3, cosine schedule, 500 warm-up steps);
+- the REC autoencoding term is computed on the 8 context frames only, and the REC prediction
+  loss decodes a random subset of 12 of the 31 predicted frames per step. Gradients still flow
+  through the whole latent rollout.
+
+The seed-0 main runs double as the pilot. They were inspected on train/val losses only, and they
+are kept as the seed-0 runs because no hyperparameter changed after them.
+
+STATE models are trained on the CPU so that the GPU is used by one job at a time. The STATE loss
+normalization was fixed before its first full run.
+
+**2026-11-05, readout details (validated on ground truth only).**
+- `g_eff` windows use speed-dependent margins (a contact can happen between frames) and reject
+  windows whose quadratic fit leaves an RMS residual above 1.5 px.
+- The Bayes reference uses, for each object, the longest contact-free run of context frames
+  (from the true trajectory) instead of fixed 7-frame windows. We report the pre-registered
+  sigma = 1 px and, as a sensitivity check, sigma = 0.25 px.
+
+**2026-11-05, E4 concretized.**
+- The velocity edit is +0.5 box/s on object 0 of 300 conservative test episodes.
+- The direction comes from 600 matched pairs on val (shifts of +-[0.3, 0.8]).
+- Reported quantities: CER against the simulator counterfactual, and the model's change in
+  p_x and E (readout, central differences) relative to the true change.

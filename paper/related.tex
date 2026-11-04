@@ -1,0 +1,55 @@
+\section{Related work}
+\label{sec:related}
+
+\paragraph{Do video models obey physical laws?} Behavioural evaluations find that video
+generators produce realistic frames that violate physics
+\citep{motamed2026physicsiq,zhang2025morpheus}, including sub-Earth effective gravity
+\citep{thozhiyoor2025slower}. In the closest controlled study, \citet{kang2025far} train
+diffusion video models on a 2D simulator and find near-perfect in-distribution predictions,
+gains from scale on combinatorial generalization, and failure out of distribution, with
+``case-based'' imitation of the nearest training example. \citet{li2026ldr} reduce the
+ID-to-OOD gap with an explicit kinematic-integration bias. All of these studies look only at
+outputs. We ask where in the model the OOD failure arises, and what an optimal learner would do.
+
+\paragraph{Intuitive physics.} Violation-of-expectation benchmarks
+\citep{riochet2018intphys,piloto2022intuitive,bear2021physion} and the finding that V-JEPA's
+surprise detects IntPhys violations while pixel predictors do not \citep{bardes2024vjepa,garrido2025intuitive}
+motivate our comparison of latent-prediction (JEPA) and reconstruction objectives on identical
+architectures and data.
+
+\paragraph{Inside world models.} Large video encoders contain linearly accessible physical
+variables at intermediate depth \citep{joseph2026interpreting}, and steering along probe
+directions shifts plausibility judgments \citep{alam2026cav}. Which physical parameters are
+decodable from latent world models depends on the prediction targets and horizon
+\citep{tan2026latent}. In recurrent world models, low-rank hidden-state edits can carry
+counterfactual velocity changes through rollouts \citep{liu2026carriers,chen2026compact}, and
+event-conditioned diagnostics reveal contact structure \citep{liu2026event}. Probing of RL world
+models finds near-linear game state \citep{rlprobe2026}. On conserved quantities,
+\citet{liao2026objective} show that state-input dynamics models encode invariants at $R^2\approx1$
+that are causally inert under a next-state objective, \citet{bao2026invariant} recover an
+energy-like invariant in a pixel DreamerV3 pendulum model, \citet{wang2026certified} certify
+conservation horizons of decoded invariants, and \citet{interno2026observer} argue for
+non-invasive linear probes. We build on these tools but target a different question: the
+\emph{locus} of OOD failure for an in-context-inferred physical parameter, with
+simulator-exact counterfactual contexts and a Bayes-optimal reference.
+
+\paragraph{World representations and inductive bias.} The Othello-GPT line
+\citep{li2023othello,nanda2023othello,yuan2025revisiting} and critiques of implicit world models
+\citep{vafa2024evaluating} established probing and intervention as evidence for world
+representations. Transformers trained on orbits predict well without a Newtonian inductive bias
+\citep{vafa2025found}, and context length controls whether Keplerian or Newtonian solutions emerge
+\citep{liu2026kepler}. Probing methodology warns that decodable information may be unused
+\citep{hewitt2019control,ravichander2021probing,elazar2021amnesic} and that decoder weights are
+not encoding directions \citep{haufe2014interpretation}. We follow causal-abstraction practice
+\citep{geiger2021causal,geiger2024das} and estimate encoding directions from matched
+counterfactual pairs.
+
+\paragraph{Physics-structured and contextual world models.} Hamiltonian and Lagrangian networks
+\citep{greydanus2019hnn,cranmer2020lnn,toth2020hgn,lehami2026} hard-code conservation. Latent world
+models for control \citep{ha2018world,hafner2020dreamer,hafner2025dreamerv3} and JEPA-style
+predictors \citep{assran2023ijepa,bardes2024vjepa,assran2025vjepa2} learn dynamics without such
+structure. Contextual world models infer physical parameters from interaction history and are
+evaluated out of range \citep{prasanna2024dreaming,dali2025,luo2026physicalworld,lin2026causalwm}.
+Our theory explains why such evaluations need an inductive bias beyond the loss: ReLU-type
+networks extrapolate roughly linearly \citep{xu2021extrapolate}, but the Bayes-optimal predictor
+clamps (Prop.~\ref{prop:clamp}).
