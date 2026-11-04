@@ -1,0 +1,47 @@
+1803.07616	IntPhys: A Framework and Benchmark for Visual Intuitive Physics Reasoning
+1803.10122	World Models
+1906.01563	Hamiltonian Neural Networks
+1909.03368	Designing and Interpreting Probes with Control Tasks
+1909.13789	Hamiltonian Generative Networks
+1912.01603	Dream to Control: Learning Behaviors by Latent Imagination
+2003.04630	Lagrangian Neural Networks
+2005.00719	Probing the Probing Paradigm: Does Probing Accuracy Entail Task Relevance?
+2006.00995	Amnesic Probing: Behavioral Explanation with Amnesic Counterfactuals
+2006.07733	Bootstrap your own latent: A new approach to self-supervised Learning
+2009.11848	How Neural Networks Extrapolate: From Feedforward to Graph Neural Networks
+2105.04906	VICReg: Variance-Invariance-Covariance Regularization for Self-Supervised Learning
+2106.02997	Causal Abstractions of Neural Networks
+2106.08261	Physion: Evaluating Physical Prediction from Vision in Humans and Machines
+2210.13382	Emergent World Representations: Exploring a Sequence Model Trained on a Synthetic Task
+2301.04104	Mastering Diverse Domains through World Models
+2301.08243	Self-Supervised Learning from Images with a Joint-Embedding Predictive Architecture
+2303.02536	Finding Alignments Between Interpretable Causal Variables and Distributed Neural Representations
+2309.00941	Emergent Linear Representations in World Models of Self-Supervised Sequence Models
+2403.10967	Dreaming of Many Worlds: Learning Contextual World Models Aids Zero-Shot Generalization
+2404.08471	Revisiting Feature Prediction for Learning Visual Representations from Video
+2406.03689	Evaluating the World Model Implicit in a Generative Model
+2411.02385	How Far is Video Generation from World Model: A Physical Law Perspective
+2501.09038	Do generative video models understand physical principles?
+2502.11831	Intuitive physics understanding emerges from self-supervised pretraining on natural videos
+2503.04421	Revisiting the Othello World Model Hypothesis
+2504.02918	Evaluating Newtonian Mechanics in Video Generative Models with Real Physical Systems
+2506.09985	V-JEPA 2: Self-Supervised Video Models Enable Understanding, Prediction and Planning
+2507.06952	What Has a Foundation Model Found? Using Inductive Bias to Probe for World Models
+2508.20294	Dynamics-Aligned Latent Imagination in Contextual World Models for Zero-Shot Generalization
+2512.02016	Objects in Generated Videos Are Slower Than They Appear: Models Suffer Sub-Earth Gravity and Don't Know Galileo's Principle...for now
+2602.06923	From Kepler to Newton: Inductive Biases Guide Learned World Models in Transformers
+2602.07050	Interpreting Physics in Video World Models
+2602.12218	The Observer Effect in World Models: Invasive Adaptation Corrupts Latent Physics
+2603.21546	What Do World Models Learn in RL? Probing Latent Representations in Learned Environment Simulators
+2605.24322	Causal Physics Steering in Video World Models via Concept Activation Vectors
+2606.24945	When Do Conservation Laws Survive Learned Representations? Certified Horizons for Latent World Models
+2606.28455	Event-Conditioned Diagnostics of Kinematic, Contact, and Object-Permanence Structure in Passive Object-State World Models
+2607.03728	The Objective Decides: When a Learned Dynamics Model Uses a Conserved Quantity
+2607.27017	What Can Latent World Models Know? Physical Information in Multimodal Predictive Representations
+2608.09926	Learning How the World Evolves: Extrapolative Video World Models via Latent Dynamics Reasoning
+2608.15156	Low-Rank Dynamics-Effective Latent Carriers for Counterfactual Rollout in Learned World Models
+2608.23526	Correcting a learned physical invariant improves world-model rollouts
+2609.21787	Compact but Moving: Intervention-Relevant Geometry in Recurrent World Models
+2610.15267	LeHami: Symplectic Latent Dynamics for World Models
+2610.29088	Causal world models under physical parameter shifts
+2610.30125	PhysiCalWorld: In-Context Physics Calibration for World Models
