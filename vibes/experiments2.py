@@ -14,7 +14,8 @@ from .world import C, DT, G_GRID, R
 
 G_INV = (1.0, 2.0, 3.0, 4.0, 6.0, 8.0, 9.0, 10.0, 11.0, 12.0)
 ANTI_G = -4.0
-F_FIT = 10            # inversion fit window (first F predicted frames); held out: F..R-1
+F_FIT = 4             # inversion fit window: first F predicted frames
+HOLD = (4, 14)        # held-out window for inversion metrics (runs must start in its first 5 frames)
 
 
 # ---------------------------------------------------------------------------------------------
@@ -182,7 +183,7 @@ def _select_inversion(p, per_g, rng):
     return np.concatenate(idx), np.concatenate(gt)
 
 
-def e3_inversion(wm, per_g=30, iters=400, lr=0.05, seed=0):
+def e3_inversion(wm, per_g=80, iters=400, lr=0.05, seed=0):
     p = world.load("gsweep")
     rng = np.random.default_rng(seed)
     idx, gt = _select_inversion(p, per_g, rng)
@@ -234,14 +235,13 @@ def e3_inversion(wm, per_g=30, iters=400, lr=0.05, seed=0):
                     h = wm.dyn.belief(var)
                     zl = var[:, -1]
                 pos = wm.from_belief(h, zl, meta).cpu().numpy()
+        a, b = HOLD
         res[f"inv_{mode}_err_fit"] = pos_err_px(pos[:, :F_FIT], fut[:, :F_FIT], meta.active)
-        res[f"inv_{mode}_err_hold"] = pos_err_px(pos[:, F_FIT:], fut[:, F_FIT:], meta.active)
-        res[f"inv_{mode}_geff_hold"] = g_eff_pred(pos[:, F_FIT:], fut[:, F_FIT:], g_target, meta.active,
-                                                   max_start=None)
-        res[f"inv_{mode}_geff_fit"] = g_eff_pred(pos[:, :F_FIT], fut[:, :F_FIT], g_target, meta.active,
-                                                  max_start=None)
-    res["inv_true_geff_hold"] = g_eff_pred(fut[:, F_FIT:, :, :2], fut[:, F_FIT:], g_target, meta.active,
-                                           max_start=None)
+        res[f"inv_{mode}_err_hold"] = pos_err_px(pos[:, a:b], fut[:, a:b], meta.active)
+        res[f"inv_{mode}_geff_hold"] = g_eff_pred(pos[:, a:b], fut[:, a:b], g_target, meta.active, max_start=5)
+        res[f"inv_{mode}_geff_fit"] = g_eff_pred(pos[:, :b], fut[:, :b], g_target, meta.active, max_start=F_FIT)
+    a, b = HOLD
+    res["inv_true_geff_hold"] = g_eff_pred(fut[:, a:b, :, :2], fut[:, a:b], g_target, meta.active, max_start=5)
     return res
 
 

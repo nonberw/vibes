@@ -200,6 +200,15 @@ run.
 
 ## Deviations
 
+- 2026-11-06, inversion windows changed after seeing seed-0 STATE inversion numbers. The fit
+  window is now frames 0-3 and metrics use held-out frames 4-13, with free-flight runs required to
+  start in frames 4-8. The reason is a val diagnostic: the slope of natural `g_eff` against `g` is
+  0.97 for runs starting in frames 0-4, 0.63 for frames 5-9 and 0.12 for frames 10-14. The old
+  held-out window (frames 10-19) therefore carries no gravity signal even in range. The decision
+  rule, hypotheses and every other metric are unchanged. All seeds, STATE seed 0 included, are
+  evaluated with the new windows.
+- 2026-11-06, inversion sample size raised from 30 to 80 episodes per target `g`. Under the new
+  held-out window only about 20% of `g = 12` episodes have a qualifying free-flight run.
 - 2026-11-06, disclosure. Before the `pilot` split existed, the per-frame readout precision of
   the seed-0 encoders was measured once on frames of 300 *test* episodes. This number is not part
   of any hypothesis. H5 uses gsweep context frames.
