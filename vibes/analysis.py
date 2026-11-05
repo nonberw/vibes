@@ -22,7 +22,7 @@ DT = sim.DT
 
 def load_run(run_dir, device="cuda"):
     cfg = json.loads((Path(run_dir) / "config.json").read_text())
-    m = WorldModel(cfg["family"], cfg["size"]).to(device)
+    m = WorldModel(cfg["family"], cfg["size"], cfg.get("core", "gru"), cfg.get("enc", "conv")).to(device)
     m.load_state_dict(torch.load(Path(run_dir) / "model.pt", map_location=device))
     m.eval()
     return m, cfg
@@ -30,7 +30,7 @@ def load_run(run_dir, device="cuda"):
 
 def untrained_like(cfg, seed=123, device="cuda"):
     torch.manual_seed(seed)
-    return WorldModel(cfg["family"], cfg["size"]).to(device).eval()
+    return WorldModel(cfg["family"], cfg["size"], cfg.get("core", "gru"), cfg.get("enc", "conv")).to(device).eval()
 
 
 # ---------------------------------------------------------------------------------------------
@@ -112,8 +112,8 @@ def pos_error(pos, states, active):
     dx = pos[..., 0] - states[..., 0]
     dx = dx - np.round(dx)
     d = np.hypot(dx, pos[..., 1] - states[..., 1])
-    a = active[:, None, :].astype(float)
-    return (d * a).sum((1, 2)) / (a.sum((1, 2)) * 1.0)
+    a = np.broadcast_to(active[:, None, :].astype(float), d.shape)
+    return (d * a).sum((1, 2)) / a.sum((1, 2))
 
 
 # ---------------------------------------------------------------------------------------------

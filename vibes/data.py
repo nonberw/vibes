@@ -29,6 +29,7 @@ class Spec:
     mu_range: tuple = (0.05, 0.4)
     y_range: tuple = (0.25, 0.85)
     v_max: float = 1.5               # vx, vy ~ U[-v_max, v_max]
+    vx_max: float = None             # if set, vx ~ U[-vx_max, vx_max] instead
     v_min_speed: float = 0.0         # reject if |v| below this (for speed-OOD sets)
     force_conservative: bool = False
     sizes_fixed: tuple = ()          # explicit sizes for the first objects (mass-ratio OOD)
@@ -95,6 +96,8 @@ def sample_params(spec: Spec, N: int, rng: np.random.Generator):
             placed.append((x, y, size[b, k]))
             while True:
                 v = rng.uniform(-spec.v_max, spec.v_max, size=2)
+                if spec.vx_max is not None:
+                    v[0] = rng.uniform(-spec.vx_max, spec.vx_max)
                 if np.hypot(*v) >= spec.v_min_speed:
                     break
             x0[b, k] = [x, y, v[0], v[1]]
@@ -143,18 +146,20 @@ class GPUData:
         self.T = self.states.shape[1]
         self.device = device
 
-    def frames(self, idx, t0, L):
+    def frames(self, idx, t0, L, do_render=True):
         """Render episodes idx (LongTensor) from frame t0 (LongTensor or int) for L frames."""
         if isinstance(t0, int):
             st = self.states[idx, t0:t0 + L]
         else:
             ar = t0[:, None] + torch.arange(L, device=self.device)[None]
             st = self.states[idx[:, None], ar]
+        if not do_render:
+            return None, st
         x = render(st[..., :2], self.kind[idx], self.size[idx], self.color[idx], self.active[idx])
         return x, st
 
-    def sample(self, B, L, gen):
+    def sample(self, B, L, gen, do_render=True):
         idx = torch.randint(0, self.N, (B,), device=self.device, generator=gen)
         t0 = torch.randint(0, self.T - L + 1, (B,), device=self.device, generator=gen)
-        x, st = self.frames(idx, t0, L)
+        x, st = self.frames(idx, t0, L, do_render)
         return x, st, idx

@@ -20,8 +20,22 @@ PALETTE = np.array([
 BG = np.array([0.08, 0.08, 0.10], dtype=np.float32)
 
 
-def render(xy, kind, size, color_id, active, res=RES):
-    """xy: (B, T, K, 2) float tensor; kind, size, color_id, active: (B, K).
+def material_bg(e, mu):
+    """v2 worlds: the scene's material is visible as a dark background tint.
+
+    Red channel encodes restitution e in [0.6, 1], green encodes surface friction mu in [0, 0.4].
+    Gravity is not visible anywhere and must be inferred from motion.
+    e, mu: tensors (B,). Returns (B, 3).
+    """
+    r = 0.04 + 0.14 * ((e - 0.6) / 0.4).clamp(0, 1)
+    g = 0.04 + 0.14 * (mu / 0.4).clamp(0, 1)
+    b = torch.full_like(r, 0.10)
+    return torch.stack([r, g, b], -1)
+
+
+def render(xy, kind, size, color_id, active, res=RES, bg=None):
+    """xy: (B, T, K, 2) float tensor; kind, size, color_id, active: (B, K); bg: optional (B, 3)
+    per-episode background color (v2 material tint).
 
     Returns (B, T, 3, res, res) float32 in [0, 1]. Later objects are painted over earlier ones.
     """
@@ -31,7 +45,10 @@ def render(xy, kind, size, color_id, active, res=RES):
     gx = px.view(1, 1, 1, res)                 # x of column
     gy = (1.0 - px).view(1, 1, res, 1)         # y of row (row 0 at top)
     pal = torch.as_tensor(PALETTE, device=dev)
-    img = torch.as_tensor(BG, device=dev).view(1, 1, 3, 1, 1).expand(B, T, 3, res, res).clone()
+    if bg is None:
+        img = torch.as_tensor(BG, device=dev).view(1, 1, 3, 1, 1).expand(B, T, 3, res, res).clone()
+    else:
+        img = bg.float().view(B, 1, 3, 1, 1).expand(B, T, 3, res, res).clone()
     pix = 1.0 / res
     for k in range(K):
         cx = xy[:, :, k, 0].view(B, T, 1, 1)

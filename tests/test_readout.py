@@ -68,3 +68,14 @@ def test_bayes_reference_clamps_out_of_range():
     assert (ref <= 8.0 + 1e-9).all() and (ref >= 4.0 - 1e-9).all()
     hi = g >= 10
     assert np.median(ref[hi]) > 7.5
+
+
+def test_pos_error_is_mean_over_frames_and_active_objects():
+    from vibes.analysis import pos_error
+    states = np.zeros((2, 5, 3, 4))
+    states[..., 1] = 0.5
+    states[:, :, 2, 1] = -10.0          # inactive, parked off-screen
+    pos = states[..., :2].copy()
+    pos[..., 1] += 0.1                  # constant 0.1 error on every object
+    active = np.array([[True, True, False], [True, False, False]])
+    np.testing.assert_allclose(pos_error(pos, states, active), [0.1, 0.1])

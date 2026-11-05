@@ -15,7 +15,7 @@ Every arXiv id below was checked against the arXiv API (`scripts/verify_refs.py`
   The paper is purely behavioural and has no analysis of internal states.
 - Physics-IQ (Motamed et al., 2501.09038, WACV 2026). Real-world physics benchmark; physical
   understanding of large video generators is severely limited and unrelated to visual realism.
-- Morpheus (Zhang et al., 2504.02918) scores generated videos against conservation laws.
+- Morpheus (Tragoudaras, Zhang et al., 2504.02918; now titled "Evaluating Newtonian Mechanics in Video Generative Models with Real Physical Systems") scores generated videos against conservation laws.
 - Thozhiyoor et al. (2512.02016) measure the effective gravity of generated falling objects
   (sub-Earth gravity, violations of Galileo's principle).
 - Learning How the World Evolves (Li et al., 2608.09926) adds an explicit kinematic-integration

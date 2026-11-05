@@ -37,6 +37,48 @@ class ConvEnc(nn.Module):
         return self.fc(self.net(x).flatten(1))
 
 
+class SSEnc(nn.Module):
+    """CNN with a spatial-softmax keypoint head (Levine et al. 2016; Finn et al. 2016).
+
+    Features at 32x32 (two stride-1 blocks after one stride-2 block keep resolution); each of
+    `n_kp` channels becomes a soft keypoint: E[cos 2pi x], E[sin 2pi x] (periodic x), E[y], plus a
+    presence logit (max activation). Keypoints are concatenated with a pooled feature vector and
+    mapped to the latent. Sub-pixel position precision comes for free.
+    """
+
+    def __init__(self, c, n_kp=16):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(5, c, 4, 2, 1), nn.GroupNorm(8, c), nn.SiLU(),
+            nn.Conv2d(c, 2 * c, 3, 1, 1), nn.GroupNorm(8, 2 * c), nn.SiLU(),
+            nn.Conv2d(2 * c, 2 * c, 3, 1, 1), nn.GroupNorm(8, 2 * c), nn.SiLU())
+        self.kp = nn.Conv2d(2 * c, n_kp, 1)
+        self.temp = nn.Parameter(torch.tensor(1.0))
+        self.pool = nn.Sequential(nn.Conv2d(2 * c, 4 * c, 4, 4), nn.SiLU())  # 32 -> 8
+        self.fc = nn.Linear(n_kp * 4 + 4 * c * 64, DZ)
+        self.n_kp = n_kp
+
+    def forward(self, x):
+        B, _, H, W = x.shape
+        ys = 1.0 - (torch.arange(H, device=x.device, dtype=x.dtype) + 0.5) / H
+        xs = (torch.arange(W, device=x.device, dtype=x.dtype) + 0.5) / W
+        ang = 2 * math.pi * xs
+        coords = torch.stack([torch.cos(ang).view(1, W).expand(H, W),
+                              torch.sin(ang).view(1, W).expand(H, W)], 0)
+        f = self.net(torch.cat([x, coords.unsqueeze(0).expand(B, 2, H, W)], 1))
+        k = self.kp(f)                                          # (B, n_kp, h, w)
+        h, w = k.shape[-2:]
+        p = torch.softmax((k * self.temp).flatten(2), -1).view(B, self.n_kp, h, w)
+        yy = 1.0 - (torch.arange(h, device=x.device, dtype=x.dtype) + 0.5) / h
+        xa = 2 * math.pi * (torch.arange(w, device=x.device, dtype=x.dtype) + 0.5) / w
+        ey = (p.sum(3) * yy).sum(2)
+        ec = (p.sum(2) * torch.cos(xa)).sum(2)
+        es = (p.sum(2) * torch.sin(xa)).sum(2)
+        pres = k.flatten(2).amax(-1)
+        kp = torch.cat([ec, es, ey, pres], 1)
+        return self.fc(torch.cat([kp, self.pool(f).flatten(1)], 1))
+
+
 class ConvDec(nn.Module):
     def __init__(self, c):
         super().__init__()
@@ -90,19 +132,36 @@ def state_target(st):
     return torch.stack([torch.cos(ang), torch.sin(ang), st[..., 1]], -1)
 
 
+class LRUCell(nn.Module):
+    """Diagonal linear recurrence h_t = a * h_{t-1} + B z_t (a in (0, 1), learned per unit).
+
+    The belief update is linear in the (encoded) inputs; all nonlinearity lives in the encoder and
+    in the prediction head that closes the open-loop feedback.
+    """
+
+    def __init__(self, dz, H):
+        super().__init__()
+        self.B = nn.Linear(dz, H)
+        r = torch.empty(H).uniform_(0.5, 0.995)
+        self.logit_a = nn.Parameter(torch.log(r / (1 - r)))
+
+    def forward(self, z, h):
+        return torch.sigmoid(self.logit_a) * h + self.B(z)
+
+
 class WorldModel(nn.Module):
-    def __init__(self, family="rec", size="M"):
+    def __init__(self, family="rec", size="M", core="gru", enc="conv"):
         super().__init__()
         c, H = SIZES[size]
-        self.family, self.size, self.H = family, size, H
+        self.family, self.size, self.H, self.core = family, size, H, core
         if family == "state":
             self.enc = StateEnc(H)
             self.dec = StateDec(H)
         else:
-            self.enc = ConvEnc(c)
+            self.enc = SSEnc(c) if enc == "ss" else ConvEnc(c)
             self.dec = ConvDec(c)  # REC: trained jointly; JEPA: readout decoder fit post hoc
         self.norm = nn.LayerNorm(DZ, elementwise_affine=False)
-        self.gru = nn.GRUCell(DZ, H)
+        self.gru = nn.GRUCell(DZ, H) if core == "gru" else LRUCell(DZ, H)
         self.head = nn.Sequential(nn.Linear(H, H), nn.SiLU(), nn.Linear(H, DZ))
         if family == "jepa":
             self.target_enc = copy.deepcopy(self.enc)

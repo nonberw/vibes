@@ -154,7 +154,7 @@ def _contact(kind_i, si, kind_j, sj, dx, dy):
 
 
 @njit(cache=True)
-def simulate(x0, kind, size, mass, n, g, e, mu, T):
+def simulate(x0, kind, size, mass, n, g, e, mu, T, dt=DT):
     """Simulate one episode. x0: (K, 4) [x, y, vx, vy]; only the first n objects are active.
 
     Returns states (T, K, 4), with states[0] = x0.
@@ -164,7 +164,7 @@ def simulate(x0, kind, size, mass, n, g, e, mu, T):
     cur = x0.copy()
     resting = np.zeros(K, dtype=np.bool_)
     st[0] = cur
-    h = DT / NSUB
+    h = dt / NSUB
     for t in range(1, T):
         for _ in range(NSUB):
             for i in range(n):
@@ -210,11 +210,11 @@ def simulate(x0, kind, size, mass, n, g, e, mu, T):
 
 
 @njit(parallel=True, cache=True)
-def simulate_batch(x0, kind, size, mass, n, g, e, mu, T):
+def simulate_batch(x0, kind, size, mass, n, g, e, mu, T, dt=DT):
     N, K = x0.shape[0], x0.shape[1]
     out = np.zeros((N, T, K, 4))
     for b in prange(N):
-        out[b] = simulate(x0[b], kind[b], size[b], mass[b], n[b], g[b], e[b], mu[b], T)
+        out[b] = simulate(x0[b], kind[b], size[b], mass[b], n[b], g[b], e[b], mu[b], T, dt)
     return out
 
 
