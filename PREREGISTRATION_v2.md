@@ -240,6 +240,11 @@ run.
     its 60k evaluation is kept only as a pilot record.
   - Seeds: main models keep {0, 1, 2}; data-scaling cells (H4) keep {0, 1}; size, WIDE and LRU
     cells use seed 0 only and are reported as exploratory, single-seed results.
+- 2026-11-06, disclosure. The run directory of the conv-AE REC pilot (seed 0, old perception)
+  still carried a `done` marker when the grid started, so the grid skipped REC seed-0 training and
+  began evaluating that stale model. The evaluation was stopped before it finished, the directory
+  was moved to `runs/v2/pilot_dyn_rec_conv_s0`, and the grid retrains REC seed 0 on the keypoint
+  perception. No number from the stale evaluation is used.
 - 2026-11-06, disclosure. Before the `pilot` split existed, the per-frame readout precision of
   the seed-0 encoders was measured once on frames of 300 *test* episodes. This number is not part
   of any hypothesis. H5 uses gsweep context frames.
