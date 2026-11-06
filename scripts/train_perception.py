@@ -19,7 +19,9 @@ if __name__ == "__main__":
     ap.add_argument("--w_var", type=float, default=1.0)
     ap.add_argument("--w_cov", type=float, default=0.04)
     ap.add_argument("--horizon", type=int, default=1)
+    ap.add_argument("--enc", default="conv")
+    ap.add_argument("--beta", type=float, default=0.0)
     a = ap.parse_args()
     out = a.out or f"runs/v2/perc_{a.kind}_{a.size}_{a.pool}_s{a.seed}"
     train_perception(a.kind, a.size, a.seed, a.steps, ROOT / out, pool_name=a.pool, batch=a.batch,
-                     w_var=a.w_var, w_cov=a.w_cov, horizon=a.horizon)
+                     w_var=a.w_var, w_cov=a.w_cov, horizon=a.horizon, enc=a.enc, beta=a.beta)

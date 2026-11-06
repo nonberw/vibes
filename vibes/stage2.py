@@ -46,7 +46,7 @@ def cache_latents(perc_dir, split, n_limit=None):
         return np.load(path, mmap_mode="r")
     perc, _ = load_perception(perc_dir)
     pool = Pool(world.ensure(split), "cuda", n_limit=n_limit)
-    zs = np.zeros((pool.N, pool.T, 64), np.float16)
+    zs = np.zeros((pool.N, pool.T, perc.dz), np.float16)
     idx_all = torch.arange(pool.N, device="cuda")
     for i in range(0, pool.N, 512):
         idx = idx_all[i:i + 512]
@@ -71,7 +71,7 @@ class Source:
             self.z = torch.from_numpy(np.ascontiguousarray(z[:self.N]))      # CPU fp16
             if device == "cuda":
                 self.z = self.z.pin_memory()
-            self.din = 64
+            self.din = self.z.shape[-1]
         self.device = device
 
     def window(self, idx, t0, L):
@@ -218,7 +218,7 @@ def fit_readout_decoder(perc_dir, steps=8000, B=64, seed=0):
     perc_dir = Path(perc_dir)
     path = perc_dir / "readout_dec.pt"
     perc, cfg = load_perception(perc_dir)
-    dec = ConvDec(SIZES[cfg["size"]][0]).cuda()
+    dec = ConvDec(SIZES[cfg["size"]][0], perc.dz).cuda()
     if path.exists():
         dec.load_state_dict(torch.load(path))
         return dec.eval()

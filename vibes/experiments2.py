@@ -46,6 +46,27 @@ def conservative(p):
     return np.where((p["e"] == 1.0) & (p["mu"] == 0.0))[0]
 
 
+def law_fraction(pred, law, clamp, active):
+    """Exploratory 'law fraction' (added after pre-registration, see Deviations).
+
+    Projection of the prediction onto the difference between two simulator counterfactuals from the
+    same state: the law (target g) and the clamp (g clipped to the training range [4, 8]).
+    lambda = <pred - clamp, law - clamp> / ||law - clamp||^2 over frames and active objects
+    (periodic x by minimum image). 1 = follows the law, 0 = follows the clamp. NaN when law == clamp.
+    """
+    def d(a, b):
+        v = a[..., :2] - b[..., :2]
+        v[..., 0] -= np.round(v[..., 0])
+        return v
+    a = active[:, None, :, None].astype(float)
+    num = (d(pred, clamp) * d(law, clamp) * a).sum((1, 2, 3))
+    den = (d(law, clamp) ** 2 * a).sum((1, 2, 3))
+    out = np.full(len(num), np.nan)
+    ok = den > (0.5 / 64) ** 2
+    out[ok] = num[ok] / den[ok]
+    return out
+
+
 # ---------------------------------------------------------------------------------------------
 # E1 probes
 
@@ -85,7 +106,9 @@ def e2_natural(wm, gprobe):
     with torch.no_grad():
         ctx_pos = torch.cat([wm.positions(out["zn"][i:i + 256], meta.sub(slice(i, i + 256)))
                              for i in range(0, meta.B, 256)]).cpu().numpy()
-    return dict(gs_g=p["g"], gs_geff=g_eff_pred(pos, fut, p["g"], meta.active),
+    clamp = sim_from(p["states"][:, C - 1], meta, np.clip(p["g"], 4.0, 8.0))[:, 1:]
+    lam = law_fraction(pos[:, :10], fut[:, :10], clamp[:, :10], meta.active)
+    return dict(gs_g=p["g"], gs_geff=g_eff_pred(pos, fut, p["g"], meta.active), gs_lambda=lam,
                 gs_gprobe=gprobe.predict(out["h"].cpu().numpy()),
                 gs_err_px=pos_err_px(pos, fut, meta.active),
                 gs_ctx_readout_err_px=pos_err_px(ctx_pos, p["states"][:, :C], meta.active))
@@ -160,6 +183,7 @@ def e3_steering(wm, gprobe, u, n_ep=200):
     geff = np.full((len(G_GRID), len(sel)), np.nan)
     cer = np.full_like(geff, np.nan)
     spec = np.full_like(geff, np.nan)
+    lam = np.full_like(geff, np.nan)
     for gi, gs in enumerate(G_GRID):
         delta = torch.as_tensor((gs - gp0) / (w @ u), dtype=torch.float32, device="cuda")
         pos = wm.from_belief(h0 + delta[:, None] * U, zlast, meta).cpu().numpy()
@@ -167,7 +191,10 @@ def e3_steering(wm, gprobe, u, n_ep=200):
         geff[gi] = g_eff_pred(pos, cf, np.full(len(sel), gs), meta.active)
         cer[gi] = 1 - pos_err_px(pos, cf, meta.active) / np.maximum(pos_err_px(base, cf, meta.active), 1e-6)
         spec[gi] = pos_err_px(pos[:, :1], base[:, :1], meta.active)
-    return dict(steer_grid=np.array(G_GRID), steer_geff=geff, steer_cer=cer, steer_spec_px=spec,
+        if gs < 4 or gs > 8:
+            cl = sim_from(sC, meta, np.full(len(sel), float(np.clip(gs, 4, 8))))[:, 1:]
+            lam[gi] = law_fraction(pos[:, :10], cf[:, :10], cl[:, :10], meta.active)
+    return dict(steer_grid=np.array(G_GRID), steer_geff=geff, steer_cer=cer, steer_spec_px=spec, steer_lambda=lam,
                 steer_w_dot_u=float(w @ u))
 
 
@@ -198,6 +225,7 @@ def e3_inversion(wm, per_g=80, iters=400, lr=0.05, seed=0):
     g_target = np.concatenate([gt, np.full(per_g, ANTI_G)])
     ctx = p["states"][all_idx, :C, :, :2]
     res = {"inv_g": g_target}
+    clamp = sim_from(p["states"][all_idx, C - 1], meta, np.clip(g_target, 4.0, 8.0))[:, 1:]
     with torch.no_grad():
         nat = wm.run(ctx, meta)
         zf = torch.cat([wm.dyn.norm(wm.latents(torch.as_tensor(fut[i:i + 128, :, :, :2], device="cuda"),
@@ -240,6 +268,7 @@ def e3_inversion(wm, per_g=80, iters=400, lr=0.05, seed=0):
         res[f"inv_{mode}_err_hold"] = pos_err_px(pos[:, a:b], fut[:, a:b], meta.active)
         res[f"inv_{mode}_geff_hold"] = g_eff_pred(pos[:, a:b], fut[:, a:b], g_target, meta.active, max_start=5)
         res[f"inv_{mode}_geff_fit"] = g_eff_pred(pos[:, :b], fut[:, :b], g_target, meta.active, max_start=F_FIT)
+        res[f"inv_{mode}_lambda_hold"] = law_fraction(pos[:, a:b], fut[:, a:b], clamp[:, a:b], meta.active)
     a, b = HOLD
     res["inv_true_geff_hold"] = g_eff_pred(fut[:, a:b, :, :2], fut[:, a:b], g_target, meta.active, max_start=5)
     return res

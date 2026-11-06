@@ -209,6 +209,37 @@ run.
   evaluated with the new windows.
 - 2026-11-06, inversion sample size raised from 30 to 80 episodes per target `g`. Under the new
   held-out window only about 20% of `g = 12` episodes have a qualifying free-flight run.
+- 2026-11-06, new **exploratory** metric (not confirmatory), the "law fraction" lambda.
+  - The simulator gives two counterfactuals from the same state: the law (the target `g`) and the
+    clamp (`g` clipped to [4, 8]).
+  - lambda is the projection of a prediction onto their difference: 1 = law, 0 = clamp.
+  - It uses every frame of the window, contacts included, so it has much more power than the
+    curvature-based `g_eff`.
+  - Reported for natural predictions (frames 0-9), steering (0-9) and inversion (held-out 4-13).
+  - It was added after seeing that the inversion `rho` of seed-0 STATE has very wide CIs. No
+    confirmatory test or decision rule uses it.
+- 2026-11-06, **perception architecture of REC and JEPA changed to a keypoint autoencoder**,
+  decided from train/val/pilot-split diagnostics only, before any REC/JEPA evaluation.
+  - The latent is 16 spatial-softmax keypoints (E[cos 2 pi x], E[sin 2 pi x], E[y], presence)
+    plus a 16-d global code, 80-d in total. This is the deep spatial autoencoder of Finn et al.
+    2016.
+  - With the plain convolutional AE, REC dynamics failed the competence gate on val (`g_eff`
+    slope 0.26, 12.2 px error). A spatial-softmax encoder with a mixing layer reached 0.45. The
+    structured keypoint latent reached 0.78.
+  - Diagnosis: latent-space MSE averages latents under uncertainty, and for an unstructured latent
+    the average of latents is not the average of positions.
+  - JEPA uses the same encoder with the baseline JEPA regularization (`w_var = 1`, `w_cov = 0.04`,
+    horizon 1). Stronger regularization (`w_var = 5`) worsened readout from 4.5 px to 8.6-9.0 px on
+    the pilot split. JEPA is not tuned further; the pre-registered gate decides whether it enters
+    the OOD analyses.
+  - The seed-0 REC perception of the pilot (`runs/v2/pilot_rec_kp`, trained on the train pool only,
+    exact final config) is reused as the main seed-0 perception.
+- 2026-11-06, **compute.** The machine has 16 GB RAM and every CUDA process needs about 5 GB, so
+  only one job runs at a time.
+  - Stage-2 steps are reduced from 60k to **30k** for every run. STATE seed 0 is retrained at 30k;
+    its 60k evaluation is kept only as a pilot record.
+  - Seeds: main models keep {0, 1, 2}; data-scaling cells (H4) keep {0, 1}; size, WIDE and LRU
+    cells use seed 0 only and are reported as exploratory, single-seed results.
 - 2026-11-06, disclosure. Before the `pilot` split existed, the per-frame readout precision of
   the seed-0 encoders was measured once on frames of 300 *test* episodes. This number is not part
   of any hypothesis. H5 uses gsweep context frames.

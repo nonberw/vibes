@@ -46,8 +46,9 @@ class SSEnc(nn.Module):
     mapped to the latent. Sub-pixel position precision comes for free.
     """
 
-    def __init__(self, c, n_kp=16):
+    def __init__(self, c, n_kp=16, raw=False, n_glob=16):
         super().__init__()
+        self.raw = raw
         self.net = nn.Sequential(
             nn.Conv2d(5, c, 4, 2, 1), nn.GroupNorm(8, c), nn.SiLU(),
             nn.Conv2d(c, 2 * c, 3, 1, 1), nn.GroupNorm(8, 2 * c), nn.SiLU(),
@@ -55,7 +56,7 @@ class SSEnc(nn.Module):
         self.kp = nn.Conv2d(2 * c, n_kp, 1)
         self.temp = nn.Parameter(torch.tensor(1.0))
         self.pool = nn.Sequential(nn.Conv2d(2 * c, 4 * c, 4, 4), nn.SiLU())  # 32 -> 8
-        self.fc = nn.Linear(n_kp * 4 + 4 * c * 64, DZ)
+        self.fc = nn.Linear(n_kp * 4 + 4 * c * 64, DZ) if not raw else nn.Linear(4 * c * 64, n_glob)
         self.n_kp = n_kp
 
     def forward(self, x):
@@ -76,14 +77,16 @@ class SSEnc(nn.Module):
         es = (p.sum(2) * torch.sin(xa)).sum(2)
         pres = k.flatten(2).amax(-1)
         kp = torch.cat([ec, es, ey, pres], 1)
+        if self.raw:   # structured latent: keypoints are the latent, plus a small global code
+            return torch.cat([kp, self.fc(self.pool(f).flatten(1))], 1)
         return self.fc(torch.cat([kp, self.pool(f).flatten(1)], 1))
 
 
 class ConvDec(nn.Module):
-    def __init__(self, c):
+    def __init__(self, c, dz=DZ):
         super().__init__()
         self.c = c
-        self.fc = nn.Linear(DZ, 8 * c * 16)
+        self.fc = nn.Linear(dz, 8 * c * 16)
         ch = [8 * c, 4 * c, 2 * c, c]
         layers = []
         for a, b in zip(ch[:-1], ch[1:]):

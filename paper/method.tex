@@ -1,74 +1,100 @@
 \section{Setup}
 \label{sec:setup}
 
-\paragraph{World.} A 2D unit box, periodic in $x$, with a floor and a ceiling
-(Fig.~\ref{fig:world}). It holds 1--3 objects, either balls (radius $0.06$--$0.10$) or
-non-rotating square blocks (half-size $0.05$--$0.085$). Mass equals area, so mass is visible. Each
-episode draws its own gravity $g\sim\mathcal{U}[4,8]$, restitution $e$ ($e{=}1$ with probability
-$\tfrac12$, otherwise $\mathcal U[0.6,1)$) and floor/ceiling friction $\mu$ ($0$ with probability
-$\tfrac12$, otherwise $\mathcal U[0.05,0.4]$). Object colors are random and distinct. The simulator
-integrates ballistic motion exactly, resolves floor and ceiling impacts at the exact time of
-impact, and uses impulses for object contacts. Horizontal momentum is therefore exactly conserved
-when $\mu{=}0$, and energy is conserved to $<6\times10^{-4}$ relative error over 72 frames when
-$e{=}1,\mu{=}0$ (unit tests). Episodes have 40 frames at 25\,fps, rendered at $64{\times}64$ on the
-GPU. Ground-truth state, energy and momentum are stored per frame. The training set has 16k
-episodes. Out-of-distribution (OOD) sets vary one factor: gravity $g\in\{1,1.5,\dots,12\}$
-(\texttt{gsweep}), object count 4--5, speed 2.2--4.2, and a $12{\times}$ mass ratio.
+\paragraph{World.} The world is a 2D unit box, periodic in $x$, with a floor and a ceiling
+(Fig.~\ref{fig:world}). It holds 1--3 objects, either balls (radius $0.06$--$0.10$) or non-rotating
+square blocks (half-size $0.05$--$0.085$), with mass equal to area. Each episode draws its own
+gravity $g\sim\mathcal U[4,8]$, restitution $e$ (equal to 1 with probability $\tfrac12$,
+otherwise $\mathcal U[0.6,1)$) and floor/ceiling friction $\mu$ (equal to 0 with probability
+$\tfrac12$, otherwise $\mathcal U[0.05,0.4]$).
 
-\paragraph{Models.} All models share a recurrent core, a Dreamer-style deterministic latent
-imagination loop \citep{hafner2020dreamer}. A per-frame encoder gives a 64-d latent $z_t$
-(layer-normalized). A GRU consumes $z_1,\dots,z_8$ (context), producing the \emph{belief state}
-$h_C$. It then runs open loop on its own predictions $\hat z_{t+1} = \mathrm{head}(h_t)$. The three
-families differ only in perception and training signal:
-\textbf{REC}, a CNN encoder and deconvolutional decoder trained by (foreground-weighted) pixel
-reconstruction of open-loop predictions;
-\textbf{JEPA}, the same CNN encoder trained to predict the latents of an EMA target encoder with
-VICReg variance/covariance regularization \citep{bardes2022vicreg,grill2020byol} and no decoder;
-\textbf{STATE}, an MLP encoder of ground-truth object positions (no velocities, no parameters),
-i.e.\ perfect perception with the same inference problem. Training uses 32-frame windows with
-8 context and 24 open-loop steps, 8k AdamW steps and batch 16. Sizes S/M/L have CNN width
-16/32/64 and GRU width 128/256/512 (0.7M/2.2M/7.8M parameters for REC).
+The simulator integrates ballistic motion exactly and resolves floor and ceiling impacts at the
+exact time of impact. Horizontal momentum is therefore conserved exactly when $\mu{=}0$, and energy
+is conserved to $<6{\times}10^{-4}$ when $e{=}1,\mu{=}0$ (unit tests).
 
-\paragraph{Reading physics out of a model.} We never trust a model's own readout of physics.
-Predicted latents are decoded to frames. For JEPA we use a decoder fit \emph{post hoc} on frozen
-target-encoder latents of held-out frames, so it cannot shape the representation. Object
-positions are then soft color-assignment centroids, with sub-pixel error on true frames
-(median $<0.3$\,px, tested). The \emph{effective gravity} $g_{\rm eff}$ of a rollout is the
-median of $-2\times$ the curvature of quadratic fits to 7-frame windows in which an object is in
-free flight according to its own predicted track. On true frames this recovers $g$ with slope
-$1.00$ (tested).
+Frames are $64{\times}64$ RGB at 20\,fps. A model sees $C{=}10$ frames and predicts the next
+$R{=}20$. Restitution and friction tint the background, so the scene's material is visible. Gravity
+is invisible in any single frame and has to be inferred from motion. This mirrors the real world,
+where rubber and steel look different but $g$ does not.
 
-\paragraph{Three measurements of gravity.} For each model we measure gravity three ways.
+The training pool has $10^5$ episodes. The \texttt{gsweep} test set holds everything in
+distribution except gravity, $g\in\{1,1.5,\dots,12\}$.
+
+\paragraph{Three families, one dynamics model.} Following the two-stage recipe of World Models
+\citep{ha2018world} and V-JEPA~2-AC \citep{assran2025vjepa2}, a per-frame encoder (64-d) is
+trained and frozen. A dynamics model is then trained on its latents. The families differ only in
+how the representation is learned:
 \begin{itemize}
-\item \textbf{Natural response.} $g_{\rm eff}$ of open-loop rollouts from real \texttt{gsweep} contexts.
-\item \textbf{Internal estimate.} A ridge probe $\hat g(h) = w^\top h + b$ fit on in-range
-validation contexts, applied to $h_C$ on \texttt{gsweep}.
-\item \textbf{Execution.} We \emph{write} a gravity into the belief state and measure what the
-rollout does. The encoding direction $u_g$ is estimated from \emph{matched-state counterfactual
-pairs}. Because conservative dynamics are time-reversible, we can construct two contexts that end
-in exactly the same state but were generated under different gravities $g, g' \in [4,8]$, by
-simulating the velocity-reversed state backwards. Then
-$u_g = \mathbb E[(h_C(g') - h_C(g))/(g'-g)]$. Unlike a probe's decoding weights
-\citep{haufe2014interpretation}, $u_g$ is the change in belief caused by gravity alone,
-with the present state held fixed exactly. To steer, we set
-$h_C \leftarrow h_C + \delta u_g$ with $\delta$ chosen so that $\hat g$ reads a target
-$g^\star\in\{1,\dots,12\}$, roll out, and measure $g_{\rm eff}$.
+\item \textbf{REC}: a convolutional autoencoder trained by pixel reconstruction.
+\item \textbf{JEPA}: the same encoder trained to predict the EMA-target latents of the next frames
+from two past frames, with VICReg regularization \citep{bardes2022vicreg} and no decoder.
+\item \textbf{STATE}: no encoder. Its inputs are ground-truth object positions, sizes, shapes and
+the visible $(e,\mu)$, with no velocities and no $g$. It has perfect perception and the same
+inference problem.
 \end{itemize}
-For a response curve $v(g)$ we report the in-range slope $s$ (over $[4,8]$) and the normalized
-out-of-range slopes $\rho_{\rm hi} = (\bar v(12)-\bar v(8))/(4s)$ and
-$\rho_{\rm lo} = (\bar v(4)-\bar v(1))/(3s)$. Here $\rho{=}1$ means the law is extrapolated and
-$\rho{=}0$ means the response clamps at the training boundary. Steering is valid only if it
-transfers in range ($s_{\rm exe}\ge0.5$) and moves rollouts toward the simulator's counterfactual
-from the same state. The latter is measured by the counterfactual error reduction
-$\mathrm{CER} = 1 - \mathrm{err}(\text{steered}, \tau^\star)/\mathrm{err}(\text{unsteered},\tau^\star)$.
 
-\paragraph{Locus rule (pre-registered).} The failure on a side (high or low) is
-\emph{inference-limited} if steered rollouts extrapolate further than natural ones (CI of
-$\rho_{\rm exe}-\rho_{\rm nat}$ above 0) and $\rho_{\rm exe}\ge 0.5$. It is
-\emph{execution-limited} if $\rho_{\rm exe}<0.5$ with its CI below 0.5. Otherwise it is mixed.
+The dynamics model is a \emph{chunk} world model. A GRU reads the 10 standardized context latents
+(and their first differences) into a belief $h_C$. An MLP decoder maps $(h_C,k)$ to the latent
+$k$ steps ahead, for all $k<20$ at once. This is how video diffusion models and V-JEPA predictors
+emit the future. It avoids the compounding open-loop errors that made our autoregressive pilot
+models hedge toward the mean (Appendix~\ref{app:v1}).
 
-\paragraph{Statistics.} The unit of replication is the training run. We train 3 seeds for the main
-M-size models and 2 seeds for each scaling cell. CIs are hierarchical bootstrap intervals
-(resample seeds, then episodes; 2000 resamples). The 10 confirmatory tests are Holm-corrected.
-Hypotheses, metrics and tests were committed before any model was trained
-(\texttt{PREREGISTRATION.md}); every deviation is logged there.
+\paragraph{Reading physics out of a model.} For REC and JEPA, predicted latents are decoded by a
+pixel decoder fit \emph{post hoc} on frozen latents of held-out frames, identically for both
+families. Objects are then located by soft colour-assignment centroids. On real frames this
+readout is accurate to 0.7\,px for REC latents.
+
+The \emph{effective gravity} $g_{\rm eff}$ of a prediction is the curvature of quadratic fits to
+the predicted height. The fits use only those stretches where the \emph{reference} trajectory (true
+or counterfactual) is in exact free flight, with a one-frame margin around contacts. Stretches are
+combined by a precision-weighted median. This avoids a trap we fell into in v1: an MSE model hedges
+on bounce timing and decelerates smoothly before a contact. A model-based free-flight test
+mistakes that ``soft bounce'' for weak gravity. The estimator is exact on true trajectories (unit
+test).
+
+\paragraph{Three ways to measure gravity, and nested inversion.}
+\begin{itemize}
+\item \textbf{Natural response}: $g_{\rm eff}$ of predictions from real \texttt{gsweep} contexts.
+\item \textbf{Internal estimate}: a ridge probe $\hat g(h)=w^\top h+b$ fit on in-range validation
+beliefs and applied to \texttt{gsweep}.
+\item \textbf{Linear write}: steer $h_C\leftarrow h_C+\delta u_g$ until $\hat g$ reads a target
+$g^\star$. The direction $u_g$ is estimated from \emph{matched-state counterfactual pairs}: because
+conservative dynamics are time-reversible, we can build two contexts that end in \emph{exactly}
+the same state but were generated under different in-range gravities. $u_g$ is therefore the change
+in belief caused by gravity alone. A probe's decoding weights do not have this property
+\citep{haufe2014interpretation}.
+\end{itemize}
+
+A linear write can fail for an uninteresting reason: the belief may encode $g$ along a curved
+manifold. We therefore also \emph{invert} the frozen model.
+\begin{itemize}
+\item \textbf{inv-$h$} optimizes the belief itself, within the GRU's range ($h=\tanh v$).
+\item \textbf{inv-$z$} optimizes the ten context latents, which are passed through the frozen
+belief GRU.
+\end{itemize}
+Both use the model's own loss on the first four predicted frames only. All metrics are computed on
+the held-out continuation (frames 4--13).
+
+The logic of the nesting:
+\begin{itemize}
+\item If even inv-$h$ cannot continue an out-of-range trajectory, the failure is in
+\emph{execution}: no belief the dynamics can receive makes it follow $g{=}12$.
+\item If inv-$h$ and inv-$z$ succeed but natural contexts do not, the failure is in
+\emph{inference}: a suitable belief exists and is reachable, but real evidence does not produce it.
+\item Perception is checked directly. Frames are individually in-distribution, so positions read
+from OOD context latents should be as accurate as in range.
+\end{itemize}
+
+An \emph{anti-physics} control asks inversion to continue upward gravity ($g{=}-4$). If it can, the
+decoder is merely flexible, and ``execution-capable'' means little.
+
+For any response curve we report the in-range slope $s$ and the normalized out-of-range slopes
+$\rho_{\rm hi}$ and $\rho_{\rm lo}$. Here $\rho{=}1$ means the law is extrapolated and $\rho{=}0$
+means the curve is clamped at the training boundary.
+
+\paragraph{Statistics.} Hypotheses, metrics, decision rules and tests were pre-registered
+(\texttt{PREREGISTRATION\_v2.md}). The pre-registration was committed before any v2 model was
+evaluated, and every deviation is logged there. The unit of replication is the training run: 3 seeds
+for the main models and 2 for scaling cells; for REC/JEPA each seed retrains both stages. CIs are
+hierarchical bootstrap intervals (seeds, then episodes; 2000 resamples). Confirmatory tests are
+one-sided and Holm-corrected.

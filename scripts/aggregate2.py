@@ -181,6 +181,24 @@ def analyse_config(rs, confirm, fam, pvals):
             v = "mixed"
         o[f"locus_{side}"] = v
     o["inv_h_reproduces_antiphysics"] = bool(o["inv_h_anti_geff"][0] < 0)
+    # exploratory law fraction lambda (1 = law, 0 = clamp), by side
+    if "gs_lambda" in rs[0]:
+        G_GSL = [(G_GS[0][0] + ["gs_lambda"], 0)]
+        for side, sel in (("hi", lambda g: g >= 10), ("lo", lambda g: g <= 2)):
+            pt, sm = hboot(rs, lambda rr, sel=sel: float(np.nanmean(cat(rr, "gs_lambda")[sel(cat(rr, "gs_g"))])), G_GSL)
+            o[f"lambda_nat_{side}"] = [pt, *ci(sm)]
+            gi = rs[0]["steer_grid"]
+            m = sel(gi)
+            pt, sm = hboot(rs, lambda rr, m=m: float(np.nanmean(cat(rr, "steer_lambda", 1)[m])),
+                           [(G_ST[0][0] + ["steer_lambda"], 1)])
+            o[f"lambda_steer_{side}"] = [pt, *ci(sm)]
+            for mode in ("nat", "z", "h"):
+                pt, sm = hboot(rs, lambda rr, mode=mode, sel=sel: float(np.nanmean(
+                    cat(rr, f"inv_{mode}_lambda_hold")[sel(cat(rr, "inv_g")) & (cat(rr, "inv_g") > 0)])),
+                    [(INV_KEYS + [f"inv_{q}_lambda_hold" for q in ("nat", "z", "h")], 0)])
+                o[f"lambda_inv_{mode}_{side}"] = [pt, *ci(sm)]
+        for mode in ("nat", "z", "h"):
+            o[f"lambda_inv_{mode}_anti"] = float(np.nanmean(cat(rs, f"inv_{mode}_lambda_hold")[cat(rs, "inv_g") < 0]))
     # H5 perception check (latent families)
     if fam in ("rec", "jepa"):
         def excess(rr):
@@ -314,6 +332,132 @@ def figures(runs, out):
     fig.savefig(RES / "fig_locus.png", dpi=200)
     fig.savefig(ROOT / "paper" / "fig_locus.pdf")
     plt.close(fig)
+
+    def save(fig, name):
+        fig.tight_layout()
+        fig.savefig(RES / f"{name}.png", dpi=200)
+        fig.savefig(ROOT / "paper" / f"{name}.pdf")
+        plt.close(fig)
+
+    # ---- E1 decodability
+    fig, a = plt.subplots(figsize=(5.4, 2.4))
+    qs = ["g", "e", "mu", "E", "px"]
+    w = 0.13
+    for i, f in enumerate(fams):
+        o = out["configs"]["_".join(str(x) for x in main_key(f))]
+        a.bar(np.arange(5) + (2 * i - 2.5) * w, [np.mean(o[f"r2_{q}_trained"]) for q in qs], w, color=COLOR[f],
+              label=LABEL[f].split(" (")[0] + " trained")
+        a.bar(np.arange(5) + (2 * i - 1.5) * w, [np.mean(o[f"r2_{q}_untrained"]) for q in qs], w, color=COLOR[f],
+              alpha=0.35, label="untrained dynamics")
+    a.set_xticks(range(5), ["$g$", "$e$", "$\\mu$", "$E$", "$p_x$"])
+    a.set_ylabel("linear probe $R^2$ on $h_C$")
+    a.set_ylim(-0.2, 1.05)
+    a.legend(fontsize=6, frameon=False, ncol=3, loc="lower center", bbox_to_anchor=(0.5, 1.0))
+    save(fig, "fig_probes")
+
+    # ---- E7 scaling + controls
+    fig, ax = plt.subplots(1, 3, figsize=(10.5, 2.7))
+    for f in fams:
+        xs, rh, rl, er = [], [], [], []
+        for n in (1000, 8000, 100000):
+            tag = f"{f}_M_gru_train_{n}"
+            if tag in out["configs"]:
+                o = out["configs"][tag]
+                xs.append(n)
+                rh.append(o["nat_hi"])
+                rl.append(o["nat_lo"])
+                er.append(np.mean(o["test_err_px"]))
+        if xs:
+            rh = np.array(rh)
+            ax[0].errorbar(xs, rh[:, 0], yerr=[rh[:, 0] - rh[:, 1], rh[:, 2] - rh[:, 0]], fmt="o-", capsize=2,
+                           color=COLOR[f], label=LABEL[f].split(" (")[0])
+            ax[2].plot(xs, er, "o-", color=COLOR[f])
+        xs, rh = [], []
+        for sz in ("S", "M", "L"):
+            tag = f"{f}_{sz}_gru_train_100000"
+            if tag in out["configs"]:
+                xs.append({"S": 1, "M": 2, "L": 3}[sz])
+                rh.append(out["configs"][tag]["nat_hi"])
+        if xs:
+            rh = np.array(rh)
+            ax[1].errorbar(xs, rh[:, 0], yerr=[rh[:, 0] - rh[:, 1], rh[:, 2] - rh[:, 0]], fmt="o-", capsize=2,
+                           color=COLOR[f])
+    ax[0].set_xscale("log")
+    ax[0].set_xlabel("training episodes")
+    ax[0].set_ylabel("natural $\\rho_{\\rm hi}$ (1 law, 0 clamp)")
+    ax[1].set_xticks([1, 2, 3], ["S", "M", "L"])
+    ax[1].set_xlabel("dynamics size")
+    ax[2].set_xscale("log")
+    ax[2].set_xlabel("training episodes")
+    ax[2].set_ylabel("in-range error, 20 frames (px)")
+    for a in ax[:2]:
+        a.axhline(1, color="k", lw=0.5, ls="--")
+        a.axhline(0, color="k", lw=0.5, ls=":")
+    ax[0].legend(fontsize=6, frameon=False)
+    save(fig, "fig_scaling")
+
+    fig, ax = plt.subplots(1, len(fams), figsize=(3.4 * len(fams), 2.6), squeeze=False)
+    for i, f in enumerate(fams):
+        a = ax[0, i]
+        a.axvspan(4, 8, color="#eeeeee", zorder=0)
+        a.plot([0, 13], [0, 13], "k--", lw=0.7)
+        for key, ls, lab in ((main_key(f), "-", "GRU, train $g\\in[4,8]$"),
+                             ((f, "M", "lru", "train", 100000), "-.", "LRU core"),
+                             ((f, "M", "gru", "wide", 100000), ":", "WIDE, train $g\\in[1,12]$")):
+            if key in runs:
+                c = np.stack([[gmean(r["gs_g"], r["gs_geff"], x) for x in grid] for r in runs[key]])
+                a.plot(grid, c.mean(0), ls, color=COLOR[f], label=lab)
+        a.set_title(LABEL[f].split(" (")[0], fontsize=8)
+        a.set_xlabel("true $g$")
+        a.set_ylim(-1, 13)
+        if i == 0:
+            a.set_ylabel("natural $g_{\\rm eff}$")
+            a.legend(fontsize=6, frameon=False, loc="upper left")
+    save(fig, "fig_controls")
+
+    # ---- drift
+    if all("long_Erel" in runs[main_key(f)][0] for f in fams):
+        fig, ax = plt.subplots(1, 2, figsize=(7, 2.5))
+        for f in fams:
+            rs = runs[main_key(f)]
+            d = np.nanmedian(np.concatenate([r["long_Erel"] for r in rs]), 0)
+            ax[0].plot(np.arange(len(d)) + 2, d, color=COLOR[f], label=LABEL[f].split(" (")[0])
+            e = np.mean([r["long_err_t"] for r in rs], 0)
+            ax[1].plot(np.arange(len(e)) + 1, e, color=COLOR[f])
+        for a in ax:
+            for x in (20, 40, 60):
+                a.axvline(x, color="k", lw=0.4, ls=":")
+            a.set_xlabel("predicted frame (chunks of 20)")
+        ax[0].set_ylabel("median $|\\hat E-E|/E$")
+        ax[1].set_ylabel("position error (px)")
+        ax[0].legend(fontsize=6, frameon=False)
+        save(fig, "fig_drift")
+
+    # ---- law fraction
+    if all("gs_lambda" in runs[main_key(f)][0] for f in fams):
+        fig, ax = plt.subplots(1, len(fams), figsize=(3.4 * len(fams), 2.5), squeeze=False, sharey=True)
+        for i, f in enumerate(fams):
+            rs = runs[main_key(f)]
+            a = ax[0, i]
+            ood = grid[(grid < 4) | (grid > 8)]
+            a.plot(ood, [np.nanmean(np.concatenate([r["gs_lambda"][r["gs_g"] == x] for r in rs])) for x in ood], "o",
+                   color=COLOR[f], label="natural")
+            sl = np.nanmean(np.concatenate([r["steer_lambda"] for r in rs], 1), 1)
+            a.plot(grid, sl, "s", mfc="none", color=COLOR[f], label="linear write")
+            for mode, mk, lab in (("z", "^", "invert context"), ("h", "v", "invert belief")):
+                vals = [np.nanmean(np.concatenate([r[f"inv_{mode}_lambda_hold"][r["inv_g"] == x] for r in rs]))
+                        for x in G_INV]
+                a.plot(G_INV, vals, mk, color=COLOR[f], alpha=0.6, label=lab)
+            a.axhline(1, color="k", lw=0.5, ls="--")
+            a.axhline(0, color="k", lw=0.5, ls=":")
+            a.axvspan(4, 8, color="#eeeeee", zorder=0)
+            a.set_title(LABEL[f].split(" (")[0], fontsize=8)
+            a.set_xlabel("target $g$")
+            a.set_ylim(-1, 2)
+            if i == 0:
+                a.set_ylabel("law fraction $\\lambda$ (1 law, 0 clamp)")
+                a.legend(fontsize=6, frameon=False)
+        save(fig, "fig_lambda")
 
 
 if __name__ == "__main__":

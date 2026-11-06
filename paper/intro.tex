@@ -1,0 +1,52 @@
+\section{Introduction}
+
+Do video world models learn physics, or do they memorize what physics usually looks like? Two
+kinds of evidence are usually offered, and neither settles the question.
+
+\emph{Behavioural} evidence asks whether generated futures obey physical laws. Controlled studies
+find near-perfect in-distribution behaviour and failure out of distribution (OOD)
+\citep{kang2025far}. Large video generators fail physics benchmarks while producing realistic
+pixels \citep{motamed2026physicsiq,zhang2025morpheus,thozhiyoor2025slower}.
+
+\emph{Representational} evidence asks whether physical variables can be decoded from internal
+states \citep{joseph2026interpreting,tan2026latent,interno2026observer}. Decodable conserved
+quantities can be causally inert \citep{liao2026objective}.
+
+Behaviour tells us \emph{that} an OOD failure happens, not \emph{where}. Probes tell us that
+information is present, not that it is used, and certainly not what an ideal learner would have
+done.
+
+This paper asks one sharp version of the question. A world model must infer gravity, a hidden
+physical parameter, from a few context frames and then predict the future. When the true gravity
+lies outside the training range, does the model fail because its belief state never represents an
+out-of-range gravity (\emph{inference}), because its transition cannot carry one out
+(\emph{execution}), or because its perception misreads the frames (\emph{perception})? And is the
+failure a failure at all?
+
+Our first contribution answers the last question in theory (Section~\ref{sec:theory}). Under
+squared loss, the Bayes-optimal predictor's implied gravity is the posterior mean, which lies inside
+the training range for every context. With noisy observations it converges to the boundary. Without
+noise, the objective places no constraint at all on out-of-range contexts. Snapping back is
+therefore what the loss asks for, and any extrapolation of the law has to come from an inductive
+bias. We also show that low loss alone forces physical quantities to be decodable. A positive probe
+is consequently weak evidence of anything beyond competence.
+
+Our second contribution is a causal dissection of the failure. We build a controlled world of
+balls and blocks with per-episode gravity, restitution and friction, in which materials are visible
+and gravity is not. Three families of chunk world models share one dynamics architecture and differ
+only in the training signal: pixel reconstruction (REC), latent prediction (JEPA) and ground-truth
+positions (STATE). For each model we measure gravity three ways: the gravity its predictions
+exhibit, the gravity a probe reads from its belief, and the gravity its predictions exhibit when
+we \emph{write} a gravity into the belief. The write uses a direction estimated from exact
+matched-state counterfactuals, made possible by time-reversing the simulator.
+
+Because a linear write can fail for uninteresting reasons, we add \emph{nested inversion}:
+\begin{itemize}
+\item optimize the belief itself, which tests execution;
+\item optimize the context latents fed to the frozen belief network, which tests reachability.
+\end{itemize}
+In both cases we fit only the first predicted frames and measure physics on held-out frames. An
+anti-physics control (upward gravity) calibrates how flexible the decoder is.
+
+Everything was pre-registered, including a first version of the study whose models never became
+competent. We report it in Appendix~\ref{app:v1}, because the way it failed is itself informative.

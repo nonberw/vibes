@@ -1,0 +1,45 @@
+\section{Version 1 of this study, and why it failed}
+\label{app:v1}
+
+We pre-registered a first version (commit \texttt{6a44689}) and report its failure because the
+failure modes are instructive and because hiding them would misrepresent how the final design was
+reached.
+
+\paragraph{Design.} Version 1 differed in four ways:
+\begin{itemize}
+\item it had 25\,fps and 8 context frames;
+\item restitution and friction were hidden;
+\item the training pool had 16k episodes;
+\item models were trained end to end: a CNN encoder and GRU with open-loop autoregressive
+prediction of 24 frames, using pixel loss (REC), EMA-target latent loss (JEPA), or ground-truth
+positions (STATE); 8k steps.
+\end{itemize}
+
+\paragraph{What went wrong.}
+\begin{enumerate}
+\item \textbf{No competence.} All three families blurred toward the mean within about ten frames.
+Linear probes recovered gravity from the belief with $R^2\approx0$. Even teacher-forced
+one-step predictors on ground-truth positions did not beat a constant-velocity baseline in free
+flight. Gravity's per-frame signature ($g\,\Delta t^2\approx0.6$\,px) was below the models'
+precision, and the one-step loss barely rewards inferring it. Knowing the exact $g$ improves the
+one-step error by about $3\times10^{-6}$, against a total loss of about $2\times10^{-3}$.
+\item \textbf{Memorization.} With 16k episodes, a chunk predictor's training loss kept falling
+while validation error stalled. With 200k episodes, the gap closed and probe $R^2$ for $g$ rose
+from 0.2 to 0.8. In this contact-rich world, generalizing physics needs far more distinct episodes
+than memorizing them does.
+\item \textbf{Hidden materials dominated the loss.} With the simulator we can compute how much
+prediction error each unknown causes. Not knowing $(e,\mu)$ costs 7--9\,px over 24 frames; not
+knowing $g$ costs 3--5\,px. Models learned contacts long before gravity.
+\item \textbf{A biased gravity estimator.} Our first $g_{\rm eff}$ estimator selected free-flight
+windows from the model's own predicted track. MSE-trained models hedge on the timing of bounces.
+They decelerate smoothly before an uncertain contact (a ``soft bounce''), and those windows
+entered the estimate as weak or even negative gravity. Restricting the fits to frames where the
+\emph{reference} trajectory is in exact free flight removes the bias.
+\item \textbf{A metric bug} (a missing division by the number of frames) inflated position errors
+32-fold. It was caught by inspection and pinned down by a unit test.
+\end{enumerate}
+
+Diagnosing these issues required running the full version-1 evaluation on seed-0 models, which the
+version-1 pilot clause forbade. Version 2 therefore uses new splits with new seeds, and nothing from
+version 1 is reported as a result. Every design change was made from train/validation diagnostics
+and committed in \texttt{PREREGISTRATION\_v2.md} before any version-2 evaluation.
