@@ -1,0 +1,47 @@
+\section{Details}
+\label{app:details}
+
+\subsection{Effective-gravity estimator}
+For an object, a \emph{run} is a maximal stretch of frames in which the reference trajectory is in
+exact free flight: the second differences of its height equal $-g\,\Delta t^2$ within $2\times10^{-5}$,
+with a one-frame margin on both sides of any contact. Runs of at least five frames that start within
+the first eight predicted frames receive a quadratic fit in time over the predicted height; the
+estimate is $-2\times$ the quadratic coefficient. Runs are combined by a weighted median, with weights
+equal to the curvature precision $\sum_t q_t^2$, where $q$ is $t^2$ with the constant and linear
+components projected out. On true trajectories the estimator recovers $g$ to $4\times10^{-6}$; with
+i.i.d.\ Gaussian noise of 1 px on positions, its per-episode standard deviation is 0.7. At $g=12$ only
+about 20\% of episodes contain a qualifying run within the held-out window (frames 4--13), because
+objects reach the floor quickly; the pre-registered sample sizes account for this.
+
+\subsection{Bayes reference}
+For each \texttt{gsweep} episode, each object's longest contact-free run of context frames
+(from the true trajectory) contributes Fisher information $1/s_n^2$ about $g$, where $s_n$ is the
+standard deviation of the least-squares curvature estimate from $n$ noisy frames. Information is
+summed across objects. The posterior under the prior $\mathcal U[4,8]$ is a truncated normal centred
+on the noisy estimate; its mean is averaged over 200 draws of the noise. We report $\sigma=1$ px
+(pre-registered) and $\sigma=0.25$ px.
+
+\subsection{Matched-state counterfactual pairs}
+Conservative episodes ($e=1,\mu=0$) are time-reversible. For a validation episode's state at the last
+context frame, we negate velocities, simulate $C$ frames under gravity $g'$, reverse the result and
+negate velocities again; this yields a context under $g'$ that ends in exactly the original state
+(unit test: $<10^{-5}$). Two such contexts under $g$ and $g'$ (drawn in $[4,8]$ with $|g-g'|\ge1$)
+give one pair; the encoding direction is the mean of $(h_C(g')-h_C(g))/(g'-g)$ over 800 pairs.
+
+\subsection{Nested inversion}
+inv-$h$ optimizes $v$ with $h=\tanh v$ (Adam, lr 0.05, 400 steps), starting from the natural belief,
+to minimize the model's latent MSE on predicted frames 0--3 against the latents of the target
+trajectory. inv-$z$ optimizes the ten standardized context latents, which are passed through the
+frozen belief GRU, with the same objective. All reported metrics use frames 4--13 and runs starting
+in frames 4--8. The anti-physics control uses 80 in-range contexts whose future is re-simulated from
+the last context state with $g=-4$ and the episode's own $e,\mu$.
+
+\subsection{Hyperparameters and compute}
+Stage 1: 12k AdamW steps, batch 64, lr $10^{-3}$ with cosine decay, on $2.0$M-parameter (M)
+encoders; JEPA uses an EMA target (0.996) and VICReg weights $(1, 0.04)$. Stage 2: 30k steps, batch
+128, lr $10^{-3}$ cosine, belief width 256 and decoder width 512 for size M. Everything ran on one
+laptop GPU with 4 GB of memory (RTX 3050 Ti). A stage-1 run takes about 25 minutes, a stage-2 run
+about 20 minutes, and the full evaluation of one model about 10 minutes.
+
+\subsection{Per-configuration statistics}
+\input{tables_cfg}

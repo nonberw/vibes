@@ -1,0 +1,169 @@
+\section{Results}
+\label{sec:results}
+
+Every number below is generated from \texttt{results/v2/summary.json} by
+\texttt{scripts/paper\_numbers.py}; intervals are 95\% hierarchical bootstrap CIs.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_world.pdf}
+\caption{The world. Rows: ground truth, REC, JEPA (context frames, then open predictions). Materials
+tint the background; gravity is only visible through motion.}
+\label{fig:world}
+\end{figure*}
+
+\subsection{Competence gate and decodability (E0, E1)}
+\label{sec:competence}
+
+\Cref{tab:competence} reports the pre-registered competence gate (in-range slope of
+$g_{\rm eff}$ against $g$ on validation episodes) and probe decodability. STATE \StateGate{} the
+gate (slope \StateSlope), REC \RecGate{} (\RecSlope) and JEPA \JepaGate{} (\JepaSlope).
+Gravity is linearly decodable from the trained belief at $R^2$ \StateRtwoG{} (STATE), \RecRtwoG{}
+(REC) and \JepaRtwoG{} (JEPA), against \StateRtwoGun{}, \RecRtwoGun{} and \JepaRtwoGun{} for an
+untrained dynamics network on the same inputs (H1, Holm $p$: \PHOneState, \PHOneRec, \PHOneJepa).
+Energy and horizontal momentum at the last context frame are also decodable (\Cref{fig:probes}),
+as Proposition~\ref{prop:decode} predicts for any competent predictor.
+
+\begin{table}[t]
+\centering\small
+\caption{Competence and decodability (M size, $10^5$ episodes, mean over seeds).}
+\label{tab:competence}
+\begin{tabular}{lcccccc}
+\toprule
+Family & seeds & slope & err$_8$ (px) & $R^2_g$ & $R^2_g$ untr. & $R^2_E$\\
+\midrule
+STATE & \StateSeeds & \StateSlope & \StateErrEight & \StateRtwoG & \StateRtwoGun & \StateRtwoE\\
+REC   & \RecSeeds   & \RecSlope   & \RecErrEight   & \RecRtwoG   & \RecRtwoGun   & \RecRtwoE\\
+JEPA  & \JepaSeeds  & \JepaSlope  & \JepaErrEight  & \JepaRtwoG  & \JepaRtwoGun  & \JepaRtwoE\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig_probes.pdf}
+\caption{Linear probes on the belief $h_C$ (fit on validation, scored on test).}
+\label{fig:probes}
+\end{figure}
+
+\subsection{Natural out-of-range response (E2)}
+\label{sec:natural}
+
+\Cref{fig:locus}(a) shows the gravity that natural predictions exhibit as the true gravity sweeps
+from 1 to 12, together with the Bayes-optimal reference of Proposition~\ref{prop:clamp}. The
+normalized out-of-range slopes ($1$ = law, $0$ = clamp) are
+$\rho_{\rm hi}=$ \StateNatHi{} and $\rho_{\rm lo}=$ \StateNatLo{} for STATE,
+\RecNatHi{} and \RecNatLo{} for REC, and \JepaNatHi{} and \JepaNatLo{} for JEPA
+(H2, Holm $p$ in \Cref{tab:hyp}).
+% FINALIZE: compare to the Bayes curve and to the clamp; note asymmetry between sides if present.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_locus.pdf}
+\caption{Where the out-of-range failure lives. Rows: families. (a) Natural predictions, with the
+Bayes-optimal reference (grey). (b) The gravity a linear probe reads from the belief. (c) Linear
+write: predictions after steering the belief so that the probe reads $g^\star$. (d) Nested inversion
+on held-out frames: natural, inverted context latents and inverted belief; the crosses at the left
+are the anti-physics control ($g=-4$). Dashed: the law; dotted: the clamp.}
+\label{fig:locus}
+\end{figure*}
+
+\subsection{Locating the failure (E3)}
+\label{sec:locus}
+
+\paragraph{Internal estimate.} The probe's reading of out-of-range gravity
+(\Cref{fig:locus}b) has normalized slope \StateInfHi{} (STATE), \RecInfHi{} (REC) and
+\JepaInfHi{} (JEPA) on the high side, and \StateInfLo{}, \RecInfLo{}, \JepaInfLo{} on the low
+side.
+% FINALIZE: does the belief carry more out-of-range information than the predictions show?
+
+\paragraph{Linear write.} Steering along the matched-pair direction transfers in range with slope
+$s_{\rm exe}=$ \StateExeS{} (STATE), \RecExeS{} (REC), \JepaExeS{} (JEPA), and reduces the error
+to the simulator's counterfactual by CER $=$ \StateCer{}, \RecCer{}, \JepaCer{}
+(H3, Holm $p$: \PHThreeState, \PHThreeRec, \PHThreeJepa). The edit leaves the first predicted frame within
+\StateSpec{}, \RecSpec{} and \JepaSpec{} px of the unsteered prediction. Beyond the range the
+written gravity yields $\rho_{\rm exe,hi}=$ \StateExeHi{}, \RecExeHi{}, \JepaExeHi{}.
+% FINALIZE.
+
+\paragraph{Nested inversion.} \Cref{fig:locus}(d) gives the decisive test. With the belief itself
+optimized (inv-$h$), held-out effective gravity has normalized slope \StateInvHHi{} (STATE),
+\RecInvHHi{} (REC) and \JepaInvHHi{} (JEPA) on the high side, and \StateInvHLo{}, \RecInvHLo{},
+\JepaInvHLo{} on the low side. Inverting the context latents instead (inv-$z$) gives
+\StateInvZHi{}, \RecInvZHi{}, \JepaInvZHi{} and \StateInvZLo{}, \RecInvZLo{}, \JepaInvZLo{}.
+The anti-physics control reaches held-out $g_{\rm eff}=$ \StateAntiH{}, \RecAntiH{}, \JepaAntiH{}
+under inv-$h$ (target $-4$).
+
+Applying the pre-registered decision rule, the high-side locus is \textbf{\StateLocusHi} for
+STATE, \textbf{\RecLocusHi} for REC and \textbf{\JepaLocusHi} for JEPA; the low side is
+\StateLocusLo, \RecLocusLo{} and \JepaLocusLo.
+% FINALIZE: interpretation paragraph.
+
+\paragraph{Perception is not the locus.} Positions read from context latents of out-of-range
+episodes exceed the in-range readout error by \RecPercExcess{} px (REC) and \JepaPercExcess{} px
+(JEPA) (H5, Holm $p$: \PHFiveRec, \PHFiveJepa). Context frames are individually in distribution, and the
+encoders treat them as such.
+
+\paragraph{Law fraction (exploratory).} The projection $\lambda$ of a prediction onto the
+law-minus-clamp direction (1 = law, 0 = clamp; \Cref{fig:lambda}) uses every frame and is less
+noisy than $g_{\rm eff}$. Natural: \StateLambdaNatHi{} (STATE), \RecLambdaNatHi{} (REC),
+\JepaLambdaNatHi{} (JEPA); inverted belief: \StateLambdaInvHHi{}, \RecLambdaInvHHi{},
+\JepaLambdaInvHHi{}.
+% FINALIZE.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig_lambda.pdf}
+\caption{Exploratory law fraction $\lambda$ by intervention.}
+\label{fig:lambda}
+\end{figure}
+
+\subsection{Scale and controls (E7)}
+\label{sec:scaling}
+
+\Cref{fig:scaling} varies the training pool from $10^3$ to $10^5$ episodes. In-range error changes by
+\StateHfourErr{} px per decade (STATE), \RecHfourErr{} (REC), \JepaHfourErr{} (JEPA), while
+$\rho_{\rm hi}$ changes by \StateHfourRho{}, \RecHfourRho{}, \JepaHfourRho{} per decade
+(H4, Holm $p$ in \Cref{tab:hyp}). \Cref{fig:controls} adds two single-seed controls: a linear
+diagonal recurrence (LRU) in place of the GRU, and a model trained with $g\sim\mathcal U[1,12]$
+(WIDE), which shows what the same architecture does when the sweep is \emph{in} range.
+% FINALIZE.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_scaling.pdf}
+\caption{Scaling. Left: natural $\rho_{\rm hi}$ against training episodes (2 seeds). Middle: against
+dynamics size (1 seed). Right: in-range 20-frame error against training episodes.}
+\label{fig:scaling}
+\end{figure*}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig_controls.pdf}
+\caption{Controls: LRU core and WIDE training range (single seed).}
+\label{fig:controls}
+\end{figure}
+
+\subsection{Conservation drift and velocity edits (E4, E5; secondary)}
+
+Under chunked autoregression on conservative episodes (\Cref{fig:drift}), the median relative
+energy error of the readout is \StateDriftOne{} (STATE) in the first 20 frames and
+\StateDriftFour{} by frames 60--80; the pixel families give \RecDriftOne{}/\RecDriftFour{} (REC)
+and \JepaDriftOne{}/\JepaDriftFour{} (JEPA). Velocity edits along a matched-pair $v_x$ direction
+move predictions toward the simulator counterfactual with CER \StateVxCer{} (STATE).
+% FINALIZE.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{fig_drift.pdf}
+\caption{Conservation drift under chunked autoregression (conservative episodes).}
+\label{fig:drift}
+\end{figure}
+
+\subsection{Pre-registered tests}
+
+\begin{table}[t]
+\centering\small
+\caption{Confirmatory tests (one-sided hierarchical bootstrap, Holm-corrected).}
+\label{tab:hyp}
+\input{tables_hyp}
+\end{table}

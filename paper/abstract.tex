@@ -1,0 +1,25 @@
+\begin{abstract}
+Video world models predict futures that look right and obey physics in distribution, then fail when
+a physical parameter leaves the training range. We ask \emph{where} such a failure lives. In a
+controlled 2D world with per-episode gravity, restitution and friction, where materials are visible
+and gravity must be inferred from motion, we train three families of chunk world models that share
+one dynamics architecture and differ only in their training signal: pixel reconstruction, latent
+prediction (JEPA) and ground-truth positions. We first show that the Bayes-optimal squared-loss
+predictor's implied gravity is the posterior mean, which lies inside the training range for every
+context and converges to the boundary as evidence accumulates, so ``snapping back'' is what the loss
+asks for, and that low loss alone makes physical quantities decodable, so probes are weak evidence.
+We then dissect the failure causally. We measure the gravity a model's predictions exhibit, the
+gravity a probe reads from its belief, and the gravity its predictions exhibit when we write a
+gravity into the belief along a direction estimated from exact matched-state counterfactuals
+(time-reversed simulation). Because a linear write can fail for uninteresting reasons, we add
+nested inversion: optimizing the belief tests execution, optimizing the context latents fed to the
+frozen belief network tests reachability, with all physics measured on held-out frames and an
+anti-physics control calibrating the decoder's flexibility. Across \StateSeeds{} seeds per family,
+natural out-of-range responses are \StateNatHi{} (high side, 1 = law, 0 = clamp) for the
+ground-truth family, \RecNatHi{} for reconstruction and \JepaNatHi{} for JEPA; the locus
+classifications are \StateLocusHi{}, \RecLocusHi{} and \JepaLocusHi{} respectively. Scaling data
+by two orders of magnitude lowers in-range error without buying extrapolation
+(\StateHfourRho{} per decade). Everything was pre-registered, including a first version of the
+study whose models never became competent, which we report. Code, data and the pre-registration
+are at \url{https://github.com/nonberw/vibes}.
+\end{abstract}
