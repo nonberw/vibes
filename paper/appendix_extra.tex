@@ -13,6 +13,15 @@ i.i.d.\ Gaussian noise of 1 px on positions, its per-episode standard deviation 
 about 20\% of episodes contain a qualifying run within the held-out window (frames 4--13), because
 objects reach the floor quickly; the pre-registered sample sizes account for this.
 
+\paragraph{A caveat at low gravity.} Below the training range an object falls slowly and stays in
+free flight for most of the window, while a model that believes $g\approx4$ expects it to reach the
+floor and bounce. The prediction then decelerates and turns upward during stretches where the
+reference is still falling. The curvature estimator reads this as weak or negative gravity, so
+natural $g_{\rm eff}$ at $g\le 2$ understates how much gravity the model actually applies. The law
+fraction $\lambda$ (Section~\ref{sec:locus}) does not have this problem, because it compares whole
+predicted trajectories with the law and clamp counterfactuals from the same state. We report both and
+treat $\lambda$ as the more faithful summary on the low side.
+
 \subsection{Bayes reference}
 For each \texttt{gsweep} episode, each object's longest contact-free run of context frames
 (from the true trajectory) contributes Fisher information $1/s_n^2$ about $g$, where $s_n$ is the

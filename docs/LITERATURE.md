@@ -107,3 +107,10 @@ Every arXiv id below was checked against the arXiv API (`scripts/verify_refs.py`
 "Inference or execution?" A causal dissection of OOD failure in video world models that infer
 physical parameters in context, with a Bayes-optimal reference derived in closed form. Compared
 across pixel-reconstruction, JEPA and ground-truth-state models, over data and model scale.
+
+Update (2026-11-06, v2): the linear-write test alone cannot separate "the dynamics cannot execute
+g = 12" from "the linear direction leaves the belief manifold", so v2 adds *nested inversion*
+(optimize the belief, or the context latents through the frozen belief network; fit the first
+predicted frames, measure held-out frames; anti-physics control) and an exploratory law-fraction
+metric. None of the works above inverts a frozen world model to ask whether a law-following
+continuation is reachable at all.
