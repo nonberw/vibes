@@ -62,8 +62,22 @@ and $s_n \to 0$, $\beta_n \to -\infty$ and the truncated mean converges to $b$.
 of measure zero does not change it.
 \end{proof}
 
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_toy.pdf}
+\caption{Proposition~\ref{prop:clamp} in the simplest setting: 1D free fall, ten noisy context heights,
+twenty future heights, squared loss, $g\sim\mathcal U[4,8]$ at training. The grey curve is the exact
+posterior mean. A linear predictor (for which the law is linear in the data) extrapolates the law
+when there is no noise, because then the loss does not constrain out-of-range contexts and the
+least-norm solution happens to be the law; with noise its implied gravity follows the posterior
+mean. ReLU and tanh MLPs trained on the same data clamp even without noise. Mean of 3 seeds.}
+\label{fig:toy}
+\end{figure*}
+
 \paragraph{Consequences for experiments.} Proposition~\ref{prop:clamp} gives a reference curve
-for OOD gravity. The \emph{law} is $g_{\rm eff} = g^\star$, and the \emph{Bayes-optimal}
+for OOD gravity. Figure~\ref{fig:toy} shows the proposition at work in a toy setting where
+everything is exact; the caption is written before the toy results and may need revision.
+% FINALIZE: rewrite the caption from results/v2/toy_bayes.json. The \emph{law} is $g_{\rm eff} = g^\star$, and the \emph{Bayes-optimal}
 response is approximately $\mathrm{clamp}(g^\star, a, b)$, softened by noise
 (Fig.~\ref{fig:locus}a shows the exact truncated-normal curve for our contexts). A model that
 snaps back is therefore doing what its loss asks. A model that extrapolates does so because of an
