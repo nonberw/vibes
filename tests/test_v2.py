@@ -108,3 +108,22 @@ def test_truncnorm_mean_is_stable_and_correct():
     got = truncnorm_mean(mu, s, 4, 8)
     assert 4 <= got[3] < 4.5 and 7.5 < got[4] <= 8 and abs(got[5] - 8) < 1e-9 and got[6] == 8
     np.testing.assert_allclose(truncnorm_mean(np.array([1.0, 6.0, 20.0]), 0.0, 4, 8), [4, 6, 8])
+
+
+def test_law_fraction_projection():
+    from vibes.experiments2 import law_fraction
+    law = np.zeros((3, 6, 2, 2))
+    law[..., 1] = np.linspace(0, 1, 6)[None, :, None]
+    clamp = np.zeros_like(law)
+    act = np.array([[True, True], [True, False], [True, True]])
+    np.testing.assert_allclose(law_fraction(law, law, clamp, act), [1, 1, 1])
+    np.testing.assert_allclose(law_fraction(clamp, law, clamp, act), [0, 0, 0])
+    np.testing.assert_allclose(law_fraction(0.25 * law, law, clamp, act), [0.25] * 3)
+    # periodic x: a wrap-around difference must not count as a large displacement
+    law2 = law.copy()
+    law2[..., 0] = 0.98
+    pred = law2.copy()
+    pred[..., 0] = 0.02
+    assert abs(law_fraction(pred, law2, clamp, act)[0] - 1.0) < 0.2
+    # law == clamp -> undefined
+    assert np.isnan(law_fraction(law, clamp, clamp, act)).all()

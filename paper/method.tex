@@ -52,7 +52,18 @@ on bounce timing and decelerates smoothly before a contact. A model-based free-f
 mistakes that ``soft bounce'' for weak gravity. The estimator is exact on true trajectories (unit
 test).
 
-\paragraph{Three ways to measure gravity, and nested inversion.}
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{fig_method.pdf}
+\caption{Four ways to ask the same frozen model for gravity. (a) Its own belief from real context
+frames. (b) The belief shifted along the matched-pair gravity direction $u_g$. (c) Context latents
+optimized through the frozen belief GRU (tests whether a suitable belief is \emph{reachable}).
+(d) The belief itself optimized (tests whether the decoder can \emph{execute} the law at all). In
+(c) and (d) the loss uses only the first four predicted frames; every metric uses held-out frames.}
+\label{fig:method}
+\end{figure*}
+
+\paragraph{Three ways to measure gravity, and nested inversion (Fig.~\ref{fig:method}).}
 \begin{itemize}
 \item \textbf{Natural response}: $g_{\rm eff}$ of predictions from real \texttt{gsweep} contexts.
 \item \textbf{Internal estimate}: a ridge probe $\hat g(h)=w^\top h+b$ fit on in-range validation
