@@ -97,3 +97,14 @@ def test_chunk_model_shapes_and_belief_dependence():
     m2 = ChunkWM(32, "S", "lru")
     pred2, h2 = m2(z)
     assert pred2.shape == (4, world.R, 32)
+
+
+def test_truncnorm_mean_is_stable_and_correct():
+    from scipy.stats import truncnorm
+    from vibes.stats import truncnorm_mean
+    mu, s = np.array([5.0, 6.0, 7.9, 3.0, 12.0, 20.0, 1e3]), np.array([1.0, 0.1, 0.5, 0.3, 0.2, 1.0, 1e-3])
+    ref = truncnorm.mean((4 - mu[:3]) / s[:3], (8 - mu[:3]) / s[:3], loc=mu[:3], scale=s[:3])
+    np.testing.assert_allclose(truncnorm_mean(mu, s, 4, 8)[:3], ref, rtol=1e-6)
+    got = truncnorm_mean(mu, s, 4, 8)
+    assert 4 <= got[3] < 4.5 and 7.5 < got[4] <= 8 and abs(got[5] - 8) < 1e-9 and got[6] == 8
+    np.testing.assert_allclose(truncnorm_mean(np.array([1.0, 6.0, 20.0]), 0.0, 4, 8), [4, 6, 8])

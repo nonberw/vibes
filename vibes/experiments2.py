@@ -3,13 +3,13 @@ import time
 
 import numpy as np
 import torch
-from scipy.stats import truncnorm
 from sklearn.linear_model import RidgeCV
 from sklearn.metrics import r2_score
 
 from . import sim, world
 from .analysis2 import Meta, g_eff_pred, pos_err_px
 from .dynamics import ChunkWM
+from .stats import truncnorm_mean
 from .world import C, DT, G_GRID, R
 
 G_INV = (1.0, 2.0, 3.0, 4.0, 6.0, 8.0, 9.0, 10.0, 11.0, 12.0)
@@ -144,7 +144,7 @@ def bayes_reference(sigma_px=1.0, a=4.0, b=8.0, n_mc=200, seed=0):
             continue
         sd = 1 / np.sqrt(info)
         gh = p["g"][j] + sd * rng.standard_normal(n_mc)
-        out[j] = truncnorm.mean((a - gh) / sd, (b - gh) / sd, loc=gh, scale=sd).mean()
+        out[j] = truncnorm_mean(gh, sd, a, b).mean()
     return p["g"], out
 
 
