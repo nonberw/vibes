@@ -42,7 +42,7 @@ def pipeline(ax, title, opt_z=False, opt_h=False, steer=False):
     hc = RED if opt_h else ("#7b5ea7" if steer else "black")
     box(ax, 8.8, 2.1, 1.0, 0.9, "$h_C$", ec=hc, lw=1.6 if (opt_h or steer) else 0.9, bold=True)
     arrow(ax, 9.3, 2.1, 9.3, 1.5)
-    box(ax, 7.0, 0.6, 2.9, 0.9, "decoder: 20 future latents\n$\\rightarrow$ positions, $g_{\\rm eff}$, $\\lambda$")
+    box(ax, 6.2, 0.6, 3.7, 0.9, "decoder: 20 future latents\n$\\rightarrow$ positions, $g_{\\rm eff}$, $\\lambda$")
     if opt_z:
         ax.text(5.25, 3.35, "optimize", color=BLUE, ha="center", fontsize=7, fontweight="bold")
     if opt_h:
@@ -50,9 +50,9 @@ def pipeline(ax, title, opt_z=False, opt_h=False, steer=False):
     if steer:
         ax.text(9.3, 3.35, "$+\\,\\delta\\, u_g$", color="#7b5ea7", ha="center", fontsize=8, fontweight="bold")
     if opt_z or opt_h:
-        ax.text(3.4, 0.9, "loss: first 4 predicted frames\nmetrics: held-out frames 4--13", ha="center", va="center",
+        ax.text(2.9, 0.9, "loss: first 4 predicted frames\nmetrics: held-out frames 4--13", ha="center", va="center",
                 fontsize=6.5, color=GREY, style="italic")
-        arrow(ax, 5.3, 1.05, 7.0, 1.05, color=GREY, ls=":", lw=0.8)
+        arrow(ax, 4.8, 1.05, 6.2, 1.05, color=GREY, ls=":", lw=0.8)
 
 
 def main():
