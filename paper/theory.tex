@@ -66,18 +66,22 @@ of measure zero does not change it.
 \centering
 \includegraphics[width=\textwidth]{fig_toy.pdf}
 \caption{Proposition~\ref{prop:clamp} in the simplest setting: 1D free fall, ten noisy context heights,
-twenty future heights, squared loss, $g\sim\mathcal U[4,8]$ at training. The grey curve is the exact
-posterior mean. A linear predictor (for which the law is linear in the data) extrapolates the law
-when there is no noise, because then the loss does not constrain out-of-range contexts and the
-least-norm solution happens to be the law; with noise its implied gravity follows the posterior
-mean. ReLU and tanh MLPs trained on the same data clamp even without noise. Mean of 3 seeds.}
+twenty future heights, squared loss, $g\sim\mathcal U[4,8]$ at training. Grey: the exact posterior
+mean (undefined out of range when $\sigma=0$). Without noise, every predictor extrapolates the law
+almost exactly (implied gravity at $g{=}12$: linear 12.0, ReLU MLP 11.9, tanh MLP 10.2): the loss
+says nothing about out-of-range contexts, and the networks' inductive bias happens to continue the
+linear law. As noise grows, the loss starts to reward shrinkage, and the MLPs move toward the Bayes
+clamp (at $\sigma{=}1$\,px: 8.6 and 8.2 at $g{=}12$, 3.8 and 3.9 at $g{=}1$), with lower in-range
+error than the best linear predictor, which can only shrink linearly (10.9 at $g{=}12$). Mean of 3
+seeds.}
 \label{fig:toy}
 \end{figure*}
 
 \paragraph{Consequences for experiments.} Proposition~\ref{prop:clamp} gives a reference curve
 for OOD gravity. Figure~\ref{fig:toy} shows the proposition at work in a toy setting where
-everything is exact; the caption is written before the toy results and may need revision.
-% FINALIZE: rewrite the caption from results/v2/toy_bayes.json. The \emph{law} is $g_{\rm eff} = g^\star$, and the \emph{Bayes-optimal}
+everything is exact. The lesson for what follows: how far a model extrapolates depends on how
+much observation noise its training made it hedge against, and a flexible model that hedges well
+in range is exactly the one that clamps out of range. The \emph{law} is $g_{\rm eff} = g^\star$, and the \emph{Bayes-optimal}
 response is approximately $\mathrm{clamp}(g^\star, a, b)$, softened by noise
 (Fig.~\ref{fig:locus}a shows the exact truncated-normal curve for our contexts). A model that
 snaps back is therefore doing what its loss asks. A model that extrapolates does so because of an
