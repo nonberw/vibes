@@ -230,6 +230,40 @@ def analyse_config(rs, confirm, fam, pvals):
     return o
 
 
+def ceiling(runs, out):
+    """Exploratory: OOD gap relative to the WIDE control (same family, g ~ U[1, 12] at training).
+
+    For each family: mean prediction error and law fraction at out-of-range g for the main model
+    and for WIDE (the in-distribution ceiling), and the share of the natural-to-ceiling gap in
+    held-out law fraction that inversion closes: (inv - nat) / (wide_nat - nat)."""
+    for fam in FAMS:
+        main, wide = runs.get(main_key(fam)), runs.get((fam, "M", "gru", "wide", 100000))
+        if not main or not wide:
+            continue
+        o = {}
+        for side, sel in (("hi", lambda g: g >= 10), ("lo", lambda g: (g <= 2) & (g > 0))):
+            def m(rs, key, gkey):
+                return float(np.nanmean(cat(rs, key)[sel(cat(rs, gkey))]))
+            o[f"err_px_{side}"] = [m(main, "gs_err_px", "gs_g"), m(wide, "gs_err_px", "gs_g")]
+            o[f"lambda_nat_{side}"] = [m(main, "gs_lambda", "gs_g"), m(wide, "gs_lambda", "gs_g")]
+            nat = m(main, "inv_nat_lambda_hold", "inv_g")
+            ceil = m(wide, "inv_nat_lambda_hold", "inv_g")
+            o[f"lambda_hold_{side}"] = {"nat": nat, "inv_z": m(main, "inv_z_lambda_hold", "inv_g"),
+                                         "inv_h": m(main, "inv_h_lambda_hold", "inv_g"), "wide_ceiling": ceil}
+            for mode in ("z", "h"):
+                def closed(rr, mode=mode):
+                    a = float(np.nanmean(cat(rr, "inv_nat_lambda_hold")[sel(cat(rr, "inv_g"))]))
+                    b = float(np.nanmean(cat(rr, f"inv_{mode}_lambda_hold")[sel(cat(rr, "inv_g"))]))
+                    return (b - a) / (ceil - a)
+                pt, sm = hboot(main, closed, [(INV_KEYS + [f"inv_{q}_lambda_hold" for q in ("nat", "z", "h")], 0)])
+                o[f"gap_closed_inv_{mode}_{side}"] = [pt, *ci(sm)]
+        inr = lambda g: (g >= 4) & (g <= 8)
+        o["err_px_in"] = [float(np.nanmean(cat(main, "gs_err_px")[inr(cat(main, "gs_g"))])),
+                          float(np.nanmean(cat(wide, "gs_err_px")[inr(cat(wide, "gs_g"))]))]
+        out[f"ceiling_{fam}"] = o
+        print(f"ceiling {fam}", json.dumps(o, default=float), flush=True)
+
+
 def h4(runs, pvals, out):
     for fam in FAMS:
         cells = [(n, runs.get((fam, "M", "gru", "train", n), [])) for n in (1000, 8000, 100000)]
@@ -265,6 +299,7 @@ def main():
                    f"invh_hi {o['inv_h_hi'][0]:.2f} invz_hi {o['inv_z_hi'][0]:.2f} locus {o['locus_hi']}/{o['locus_lo']}",
               flush=True)
     h4(runs, pvals, out)
+    ceiling(runs, out)
     out["pvals"], out["pvals_holm"] = pvals, holm(pvals) if pvals else {}
     (RES / "summary.json").write_text(json.dumps(out, indent=1, default=float))
     write_md(out)

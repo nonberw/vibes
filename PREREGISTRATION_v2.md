@@ -240,6 +240,16 @@ run.
     its 60k evaluation is kept only as a pilot record.
   - Seeds: main models keep {0, 1, 2}; data-scaling cells (H4) keep {0, 1}; size, WIDE and LRU
     cells use seed 0 only and are reported as exploratory, single-seed results.
+- 2026-11-20, new **exploratory** analysis, the WIDE ceiling (not confirmatory).
+  - The WIDE control (same family, trained on `g ~ U[1, 12]`) shows that curvature-based `g_eff`
+    saturates near 7-8 at `g = 12` even when `g = 12` is in the training range: objects reach the
+    floor quickly and the model hedges on impact timing. So `rho_hi` from `g_eff` cannot separate
+    "law" from "clamp" on the high side, and its bootstrap CIs for the pixel families are
+    uninformative. All pre-registered `rho` values are still reported.
+  - We therefore also report, as exploratory: prediction error and law fraction lambda of each main
+    model against its WIDE counterpart (the in-distribution ceiling), and the share of the
+    natural-to-ceiling gap in held-out lambda that inversion closes.
+  - WIDE is single-seed (seed 0), as fixed in the compute deviation above.
 - 2026-11-06, disclosure. The run directory of the conv-AE REC pilot (seed 0, old perception)
   still carried a `done` marker when the grid started, so the grid skipped REC seed-0 training and
   began evaluating that stale model. The evaluation was stopped before it finished, the directory
