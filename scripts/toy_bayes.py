@@ -95,6 +95,10 @@ def train(kind, X, T, seed, steps=15000, B=512, lr=2e-3):
 
 
 def main():
+    js = ROOT / "results" / "v2" / "toy_bayes.json"
+    if "--plot" in sys.argv and js.exists():
+        out = json.loads(js.read_text())
+        return plot(out, np.array(out["grid"]))
     rng = np.random.default_rng(0)
     ytr, gtr = episodes(200_000, 4, 8, rng)
     grid = np.round(np.arange(1, 12.01, 0.5), 2)
@@ -133,6 +137,10 @@ def main():
                   flush=True)
     (ROOT / "results" / "v2").mkdir(parents=True, exist_ok=True)
     (ROOT / "results" / "v2" / "toy_bayes.json").write_text(json.dumps(out, indent=1))
+    plot(out, grid)
+
+
+def plot(out, grid):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -142,7 +150,10 @@ def main():
         a.axvspan(4, 8, color="#eeeeee", zorder=0)
         a.plot(grid, grid, "k--", lw=0.8, label="law")
         a.plot(grid, np.clip(grid, 4, 8), "k:", lw=0.8, label="clamp")
-        a.plot(grid, out["curves"][f"bayes_{sigma}"], color="#999999", lw=2.5, label="Bayes posterior mean")
+        bay = np.array(out["curves"][f"bayes_{sigma}"])
+        if sigma == 0:   # without noise the posterior is undefined for out-of-range contexts (Prop. 2 iii)
+            bay = np.where((grid >= 4) & (grid <= 8), bay, np.nan)
+        a.plot(grid, bay, color="#999999", lw=2.5, label="Bayes posterior mean")
         for kind, col, lab, mk in (("linear_cf", "#2a7f9e", "linear, closed form", "s"),
                                    ("linear", "#2a7f9e", "linear, Adam", "o"),
                                    ("mlp", "#c8553d", "ReLU MLP", "o"), ("mlp_tanh", "#7b5ea7", "tanh MLP", "o")):
