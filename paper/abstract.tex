@@ -6,20 +6,20 @@ and gravity must be inferred from motion, we train three families of chunk world
 one dynamics architecture and differ only in their training signal: pixel reconstruction, latent
 prediction (JEPA) and ground-truth positions. We first show that the Bayes-optimal squared-loss
 predictor's implied gravity is the posterior mean, which lies inside the training range for every
-context and converges to the boundary as evidence accumulates, so ``snapping back'' is what the loss
-asks for, and that low loss alone makes physical quantities decodable, so probes are weak evidence.
-We then dissect the failure causally. We measure the gravity a model's predictions exhibit, the
-gravity a probe reads from its belief, and the gravity its predictions exhibit when we write a
-gravity into the belief along a direction estimated from exact matched-state counterfactuals
-(time-reversed simulation). Because a linear write can fail for uninteresting reasons, we add
-nested inversion: optimizing the belief tests execution, optimizing the context latents fed to the
-frozen belief network tests reachability, with all physics measured on held-out frames and an
-anti-physics control calibrating the decoder's flexibility. Across \StateSeeds{} seeds per family,
-natural out-of-range responses are \StateNatHi{} (high side, 1 = law, 0 = clamp) for the
-ground-truth family, \RecNatHi{} for reconstruction and \JepaNatHi{} for JEPA; the locus
-classifications are \StateLocusHi{}, \RecLocusHi{} and \JepaLocusHi{} respectively. Scaling data
-by two orders of magnitude lowers in-range error without buying extrapolation
-(\StateHfourRho{} per decade). Everything was pre-registered, including a first version of the
-study whose models never became competent, which we report. Code, data and the pre-registration
-are at \url{https://github.com/nonberw/vibes}.
+context, so ``snapping back'' is what the loss asks for, and that low loss alone makes physical
+quantities decodable, so probes are weak evidence. We then dissect the failure with matched-state
+counterfactuals from time-reversed simulation, belief steering, and nested inversion with physics
+measured on held-out frames and an anti-physics control. The pre-registered study gives a mixed
+answer, and we report it as such. Of seventeen confirmatory tests four survive correction; the
+pre-registered curvature estimator is too noisy out of range to decide between clamp and law, and
+the pre-registered locus rule returns no stable label. What is measured tightly: every family's
+belief tracks out-of-range gravity but under-reads it by about half (probe slope \StateInfHi{} for
+the ground-truth family), and perception is not at fault. In exploratory analyses, predictions sit
+about half-way between clamp and law above the range and near the clamp below it. The failure is
+split: writing the true gravity into the belief recovers the level of a model trained on the wide
+range above the training range for the one family where the write is valid, while below the range
+even an optimized belief closes only about half of the gap to that model. More data lowered in-range
+error by two pixels per decade and, contrary to our hypothesis, did not leave extrapolation
+unchanged. A first version of the study whose models never became competent is reported too. Code,
+data and both pre-registrations are at \url{https://github.com/nonberw/vibes}.
 \end{abstract}

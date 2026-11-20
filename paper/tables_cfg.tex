@@ -2,6 +2,26 @@
 \toprule
 Config & seeds & slope & $\rho_{\rm hi}$ nat & $\rho_{\rm hi}$ inv-$z$ & $\rho_{\rm hi}$ inv-$h$ & $\rho_{\rm lo}$ nat & locus hi / lo\\
 \midrule
-(no results yet) & & & & & & & \\
+jepa L gru train 100000 & 1 & 0.92 & 0.16 & 0.32 & 0.52 & 2.06 & unreachable belief / mixed\\
+jepa M gru train 1000 & 2 & 0.52 & -0.01 & -1.83 & -0.60 & 2.30 & mixed / mixed\\
+jepa M gru train 8000 & 2 & 0.73 & -0.31 & -0.30 & -0.23 & 1.36 & mixed / mixed\\
+jepa M gru train 100000 & 3 & 0.79 & 0.64 & 3.20 & -0.35 & 1.86 & mixed / mixed\\
+jepa M gru wide 100000 & 1 & 0.58 & 0.06 & 2.32 & 1.36 & 0.61 & mixed / mixed\\
+jepa M lru train 100000 & 1 & 0.54 & 0.15 & 0.13 & -2.54 & 1.28 & mixed / unreachable belief\\
+jepa S gru train 100000 & 1 & 0.71 & -0.01 & 1.39 & 0.88 & 1.46 & mixed / mixed\\
+rec L gru train 100000 & 1 & 0.65 & -0.46 & 1.05 & 0.53 & 1.26 & mixed / mixed\\
+rec M gru train 1000 & 2 & 0.42 & 0.07 & -7.62 & 0.57 & 1.35 & unreachable belief / unreachable belief\\
+rec M gru train 8000 & 2 & 0.60 & 0.05 & -1.21 & -0.08 & 2.94 & mixed / mixed\\
+rec M gru train 100000 & 3 & 0.83 & -0.08 & 14.99 & 3.61 & 1.63 & mixed / mixed\\
+rec M gru wide 100000 & 1 & 0.80 & 0.48 & 0.55 & 0.34 & 0.81 & mixed / unreachable belief\\
+rec M lru train 100000 & 1 & 0.90 & -1.42 & -0.55 & 8.64 & 1.55 & unreachable belief / unreachable belief\\
+rec S gru train 100000 & 1 & 0.65 & -0.05 & -1.13 & -1.07 & 1.28 & mixed / mixed\\
+state L gru train 100000 & 1 & 0.93 & 0.40 & -0.44 & 0.00 & 1.02 & mixed / mixed\\
+state M gru train 1000 & 2 & 0.77 & 0.01 & 0.82 & 0.94 & 3.38 & mixed / mixed\\
+state M gru train 8000 & 2 & 0.82 & 0.12 & 0.12 & 0.04 & 1.59 & mixed / mixed\\
+state M gru train 100000 & 3 & 0.87 & 0.43 & 0.31 & 0.73 & 1.28 & unreachable belief / mixed\\
+state M gru wide 100000 & 1 & 0.93 & 0.31 & 20.27 & 0.15 & 0.72 & mixed / mixed\\
+state M lru train 100000 & 1 & 0.84 & 0.21 & -0.52 & 0.78 & 1.60 & unreachable belief / mixed\\
+state S gru train 100000 & 1 & 0.70 & 0.32 & 0.16 & 0.73 & 1.72 & unreachable belief / mixed\\
 \bottomrule
 \end{tabular}

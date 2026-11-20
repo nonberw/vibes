@@ -77,6 +77,45 @@ def main():
             vals["DriftOne"], vals["DriftFour"] = fmt(d[0]), fmt(d[-1])
         for k, v in vals.items():
             L.append(f"\\newcommand{{\\{F}{k}}}{{{v}}}")
+    # exploratory: WIDE ceiling, scaling in the law fraction, secondary OOD (all from summary.json)
+    import numpy as np
+    m1 = lambda v: float(np.mean(v)) if isinstance(v, (list, tuple)) else float(v)
+    for f, F in fam_tag.items():
+        c = S.get(f"ceiling_{f}")
+        if c:
+            for side, Sd in (("hi", "Hi"), ("lo", "Lo")):
+                lh = c[f"lambda_hold_{side}"]
+                L.append(f"\\newcommand{{\\{F}HoldNat{Sd}}}{{{fmt(lh['nat'])}}}")
+                L.append(f"\\newcommand{{\\{F}HoldInvH{Sd}}}{{{fmt(lh['inv_h'])}}}")
+                L.append(f"\\newcommand{{\\{F}HoldInvZ{Sd}}}{{{fmt(lh['inv_z'])}}}")
+                L.append(f"\\newcommand{{\\{F}HoldWide{Sd}}}{{{fmt(lh['wide_ceiling'])}}}")
+                L.append(f"\\newcommand{{\\{F}GapH{Sd}}}{{{ci(c[f'gap_closed_inv_h_{side}'])}}}")
+                L.append(f"\\newcommand{{\\{F}GapZ{Sd}}}{{{ci(c[f'gap_closed_inv_z_{side}'])}}}")
+                L.append(f"\\newcommand{{\\{F}OodErr{Sd}}}{{{fmt(c[f'err_px_{side}'][0], 1)}}}")
+                L.append(f"\\newcommand{{\\{F}OodErrWide{Sd}}}{{{fmt(c[f'err_px_{side}'][1], 1)}}}")
+                L.append(f"\\newcommand{{\\{F}WideLam{Sd}}}{{{fmt(c[f'lambda_nat_{side}'][1])}}}")
+            L.append(f"\\newcommand{{\\{F}InErr}}{{{fmt(c['err_px_in'][0], 1)}}}")
+            L.append(f"\\newcommand{{\\{F}InErrWide}}{{{fmt(c['err_px_in'][1], 1)}}}")
+        for tag, T in (("M_gru_train_1000", "OneK"), ("M_gru_train_8000", "EightK"), ("S_gru_train_100000", "SizeS"),
+                       ("L_gru_train_100000", "SizeL"), ("M_lru_train_100000", "Lru")):
+            o = S["configs"].get(f"{f}_{tag}")
+            if not o:
+                continue
+            L.append(f"\\newcommand{{\\{F}{T}LamHi}}{{{ci(o['lambda_nat_hi'])}}}")
+            L.append(f"\\newcommand{{\\{F}{T}LamLo}}{{{ci(o['lambda_nat_lo'])}}}")
+            L.append(f"\\newcommand{{\\{F}{T}Err}}{{{fmt(m1(o['test_err_px']), 1)}}}")
+            L.append(f"\\newcommand{{\\{F}{T}ExeS}}{{{ci(o['exe_s'])}}}")
+        o = S["configs"].get(f"{f}_M_gru_train_100000")
+        if o:
+            for k, T in (("lambda_nat_hi", "LamNatHiPt"), ("lambda_nat_lo", "LamNatLoPt"),
+                         ("lambda_steer_hi", "LamSteerHiPt"), ("lambda_steer_lo", "LamSteerLoPt")):
+                L.append(f"\\newcommand{{\\{F}{T}}}{{{fmt(o.get(k))}}}")
+            L.append(f"\\newcommand{{\\{F}VxCer}}{{{fmt(o.get('vx_cer'))}}}")
+            L.append(f"\\newcommand{{\\{F}AntiLam}}{{{fmt(o.get('lambda_inv_h_anti'))}}}")
+            for k, T in (("count45_err_px", "CountErr"), ("speed_err_px", "SpeedErr"), ("massratio_err_px", "MassErr"),
+                         ("mass_ctrl_err_px", "MassCtrlErr")):
+                if o.get(k) is not None:
+                    L.append(f"\\newcommand{{\\{F}{T}}}{{{fmt(m1(o[k]), 1)}}}")
     for k, v in S.get("pvals_holm", {}).items():
         L.append(f"\\newcommand{{\\P{name(k)}}}{{{fmt(v, 3)}}}")
     for k, v in S.items():
@@ -84,6 +123,13 @@ def main():
             F = fam_tag[k[3:]]
             L.append(f"\\newcommand{{\\{F}HfourRho}}{{{ci(v['slope_rho_hi_per_decade'])}}}")
             L.append(f"\\newcommand{{\\{F}HfourErr}}{{{ci(v['slope_test_err_px_per_decade'])}}}")
+    vp = ROOT / "results" / "v2" / "vjepa2_probe.json"
+    if vp.exists():
+        V = json.loads(vp.read_text())
+        for k, T in (("r2_g_val_cv", "VjRtwo"), ("probe_slope_in_range", "VjSlope"), ("probe_rho_hi", "VjRhoHi"),
+                     ("probe_rho_lo", "VjRhoLo"), ("n_val", "VjN")):
+            if k in V:
+                L.append(f"\\newcommand{{\\{T}}}{{{V[k] if k == 'n_val' else fmt(V[k])}}}")
     (ROOT / "paper" / "numbers.tex").write_text("\n".join(L) + "\n", encoding="utf-8")
     print("\n".join(L))
 

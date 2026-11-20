@@ -3,7 +3,7 @@
 Nothing has been submitted anywhere. Submitting requires the author's own accounts (OpenReview,
 arXiv), which this repository does not touch.
 
-## Venues (checked 2026-11-05/06)
+## Venues (checked 2026-11-05/06, ICML CFP re-read 2026-11-20)
 
 | Venue | Deadline | Status for this paper |
 |---|---|---|
@@ -12,6 +12,15 @@ arXiv), which this repository does not touch.
 | CVPR 2027 | Nov 16, 2026 (registration Nov 10) | Too soon. |
 | L4DC 2027 | Nov 13, 2026 (firm) | Too soon. |
 | NeurIPS 2027 | Expected May 2027 | Fallback if ICML reviews are negative. |
+
+## Honest fit assessment
+
+The pre-registered study mostly did not confirm (4 of 17 tests), the main conclusions rest on
+exploratory metrics, there are three seeds, and the world is a 2D toy. For the ICML main track this
+is a weak submission; reviewers will ask for more seeds and a pre-specified out-of-range estimator.
+A workshop on world models, physical reasoning or interpretability (ICLR 2027 workshops, list out
+Nov 29, 2026) is the realistic target. ICML is still listed above because its dates are firm and
+the paper is already in its format; the choice is the author's.
 
 ## What is in the package
 
@@ -34,7 +43,8 @@ arXiv), which this repository does not touch.
    affiliation and must be removed by hand). Publish the anonymized code copy if you want
    reviewers to see it (e.g. an anonymous GitHub mirror).
 3. Re-read `results/v2/hypotheses.md` and make sure every claim in the abstract matches the Holm
-   outcomes. Every `% FINALIZE` comment in `paper/results.tex` must be resolved.
+   outcomes (4 of 17 tests supported; the paper says so). The results are mixed and partly negative:
+   decide whether you stand behind every sentence before you put your name on it.
 4. arXiv (optional, after or alongside submission, subject to the venue's policy): upload the
    `paper/` sources (tex, bib, pdf figures, style files). Category: cs.LG, cross-list cs.CV.
 5. OpenReview (opens Jan 8, 2027; create the account early): register the abstract by Jan 14,

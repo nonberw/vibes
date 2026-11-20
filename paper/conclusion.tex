@@ -1,9 +1,7 @@
 \section{Conclusion}
 
-A world model that infers a hidden physical parameter from context and then fails outside the
-training range is not necessarily broken; under squared loss, clamping to the training range is the
-optimal response. Whether a model extrapolates a law is therefore a question about inductive bias,
-and where it fails is a question that output behaviour and probes cannot answer. We answered it with
-matched-state counterfactuals and nested inversion with held-out physics in a controlled world,
-for three training signals, with pre-registered hypotheses and every deviation logged. The method
-transfers to any encoder-predictor world model whose belief can be written into.
+Under squared loss, clamping an inferred parameter to the training range is the optimal response to
+noisy evidence. Our models did not clamp: they went about half-way to the law above the range and
+stayed near the clamp below it, and their beliefs under-read out-of-range gravity similarly. We
+found no single locus. Inference and execution both fail, and our pre-registered instruments were
+too noisy to separate them. Next: more seeds and an estimator fixed in advance.

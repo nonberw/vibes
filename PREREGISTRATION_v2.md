@@ -258,3 +258,14 @@ run.
 - 2026-11-06, disclosure. Before the `pilot` split existed, the per-frame readout precision of
   the seed-0 encoders was measured once on frames of 300 *test* episodes. This number is not part
   of any hypothesis. H5 uses gsweep context frames.
+
+- **2026-11-20, outside reference (exploratory, not a test).** After the grid finished we probed a
+  frozen V-JEPA 2 ViT-L encoder on the same context frames (`scripts/vjepa2_probe.py`, 1000
+  validation episodes, ridge probe on mean-pooled features). It was not pre-registered and enters
+  no hypothesis. It is reported in the appendix as a reference for how decodable gravity is from
+  generic video features and how a linear probe fit in range behaves out of range.
+- **2026-11-20, outcome note.** With all 33 models evaluated: H1 supported for STATE only, H2 not
+  supported, H3 supported for STATE only, H4 not supported, H5 supported for REC and JEPA. The
+  locus rule of Section 6 returned labels without a stable pattern because the inversion slopes
+  have uninformative intervals. The paper reports this and bases its reading on the probe slopes
+  and on the exploratory law fraction and WIDE-ceiling analyses logged above.

@@ -1,35 +1,12 @@
 \section{Limitations}
 \label{sec:limits}
 
-\paragraph{Scale and realism.} Our models have $10^5$--$10^7$ parameters and our world is 2D at
-$64{\times}64$. We make no claim that large video generators fail in the same place. What we offer
-is a method (matched-state counterfactuals, nested inversion with held-out frames, an anti-physics
-calibration, a Bayes reference) and one carefully controlled answer. Applying the same dissection
-to a large model requires an encoder-predictor interface whose belief state can be written into.
-JEPA-style predictors have one.
-
-\paragraph{Two-stage training.} The pixel families freeze their encoder before learning dynamics,
-as World Models and V-JEPA~2-AC do. End-to-end training might place the failure differently. Our
-end-to-end version-1 models never became competent at the compute we had (Appendix~\ref{app:v1}),
-so we could not test this.
-
-\paragraph{What ``execution'' means.} Inversion searches the belief space reachable by the GRU
-($h=\tanh v$). A failure of inv-$h$ means that no such belief makes the frozen decoder continue an
-out-of-range trajectory. It does not mean that no small change to the decoder could. The 4-frame fit
-window constrains the initial curvature, so held-out success tests \emph{continuation}, not
-discovery.
-
-\paragraph{Measurement.} Effective gravity is measured only where the reference trajectory is in
-free flight. At high $g$ such stretches are short and rare (about 20\% of $g{=}12$ episodes have a
-qualifying stretch in the held-out window), which widens the out-of-range intervals. The
-exploratory law fraction $\lambda$ uses every frame but was added after pre-registration.
-
-\paragraph{Statistics.} Three seeds for the main models and two for scaling cells give a poor
-estimate of seed-level variance. Our hierarchical bootstrap resamples seeds, but with so few seeds
-its intervals are optimistic.
-
-\paragraph{Deviations.} The study departed from its first pre-registration in substantive ways
-(Appendix~\ref{app:v1}): a new world timing, visible materials, two-stage families and chunk
-dynamics. All of these were committed before any version-2 evaluation. Smaller version-2 deviations
-(inversion windows, sample sizes, the perception architecture of the pixel families and the
-exploratory law fraction) are listed with reasons in \texttt{PREREGISTRATION\_v2.md}.
+The pre-registered out-of-range estimator could not decide H2, H4 or the locus rule: free-flight
+stretches are short at high gravity, and at low gravity the curvature fit is biased by bounces the
+model predicts and the reference never makes. This is the main failure of the study design. The
+law fraction, the WIDE ceiling and the reading of a split failure were introduced after the first
+evaluations were seen; they are untested
+on fresh data and uncorrected for multiplicity. Three seeds (one for WIDE, LRU and size) estimate
+seed variance poorly. The world is a 2D toy with small two-stage models; we make no claim about
+large video generators. The high-side claim for STATE rests on one validated linear write that
+inversion does not corroborate. Appendix~\ref{app:limits} expands each point.

@@ -65,15 +65,12 @@ of measure zero does not change it.
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{fig_toy.pdf}
-\caption{Proposition~\ref{prop:clamp} in the simplest setting: 1D free fall, ten noisy context heights,
-twenty future heights, squared loss, $g\sim\mathcal U[4,8]$ at training. Grey: the exact posterior
-mean (undefined out of range when $\sigma=0$). Without noise, every predictor extrapolates the law
-almost exactly (implied gravity at $g{=}12$: linear 12.0, ReLU MLP 11.9, tanh MLP 10.2): the loss
-says nothing about out-of-range contexts, and the networks' inductive bias happens to continue the
-linear law. As noise grows, the loss starts to reward shrinkage, and the MLPs move toward the Bayes
-clamp (at $\sigma{=}1$\,px: 8.6 and 8.2 at $g{=}12$, 3.8 and 3.9 at $g{=}1$), with lower in-range
-error than the best linear predictor, which can only shrink linearly (10.9 at $g{=}12$). Mean of 3
-seeds.}
+\caption{Proposition~\ref{prop:clamp} in a toy: 1D free fall, ten noisy context heights, twenty
+future heights, squared loss, $g\sim\mathcal U[4,8]$. Grey: exact posterior mean. Without noise
+every predictor extrapolates the law (implied gravity at $g{=}12$: linear 12.0, ReLU MLP 11.9, tanh
+MLP 10.2), because the loss says nothing about out-of-range contexts. With noise the loss rewards
+shrinkage and the MLPs move toward the Bayes clamp (at $\sigma{=}1$\,px: 8.6 and 8.2 at $g{=}12$).
+Mean of 3 seeds.}
 \label{fig:toy}
 \end{figure*}
 
@@ -89,7 +86,7 @@ inductive bias that the loss does not specify. Two further points matter for int
 interventions. First, the Bayes predictor can be built so that its belief state stores the
 \emph{unclamped} sufficient statistic $\hat g_n$ and applies the clamp only when it predicts.
 Clamping can therefore live in ``inference'' or in ``execution'', and the theory does not say
-which. That is an empirical question, and Section~\ref{sec:locus} answers it with probes and
-steering. Second, (iii) means that what happens out of range is decided by the architecture's
+which. That is an empirical question, and Section~\ref{sec:locus} takes it up with probes,
+steering and inversion. Second, (iii) means that what happens out of range is decided by the architecture's
 extrapolation behaviour. ReLU and GRU networks are known to extrapolate roughly linearly along
 some directions \citep{xu2021extrapolate}, so partial extrapolation is a priori plausible.

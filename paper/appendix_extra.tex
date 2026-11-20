@@ -18,9 +18,25 @@ free flight for most of the window, while a model that believes $g\approx4$ expe
 floor and bounce. The prediction then decelerates and turns upward during stretches where the
 reference is still falling. The curvature estimator reads this as weak or negative gravity, so
 natural $g_{\rm eff}$ at $g\le 2$ understates how much gravity the model actually applies. The law
-fraction $\lambda$ (Section~\ref{sec:locus}) does not have this problem, because it compares whole
+fraction $\lambda$ (Section~\ref{app:lambda}) does not have this problem, because it compares whole
 predicted trajectories with the law and clamp counterfactuals from the same state. We report both and
 treat $\lambda$ as the more faithful summary on the low side.
+
+\subsection{Law fraction (exploratory)}
+\label{app:lambda}
+For an out-of-range episode with true gravity $g^\star$, let $Y^{\rm law}$ be the simulator's
+continuation from the last context state under $g^\star$ and $Y^{\rm clamp}$ the continuation from
+the same state under $\mathrm{clamp}(g^\star, 4, 8)$, both as object positions over the scored
+frames. For a prediction $\hat Y$ read out as positions,
+\[
+\lambda = \frac{\langle \hat Y - Y^{\rm clamp},\; Y^{\rm law} - Y^{\rm clamp}\rangle}
+               {\| Y^{\rm law} - Y^{\rm clamp}\|^2},
+\]
+with horizontal differences taken by minimum image and episodes dropped when the two
+counterfactuals differ by less than half a pixel in total. $\lambda=1$ for a prediction that
+follows the law and $0$ for one that follows the clamp; errors orthogonal to the law-minus-clamp
+direction do not enter. We report the mean over episodes at $g\ge 10$ (high side) and $g\le 2$
+(low side). The metric was introduced after the first evaluations and is logged as a deviation.
 
 \subsection{Bayes reference}
 For each \texttt{gsweep} episode, each object's longest contact-free run of context frames
@@ -51,6 +67,93 @@ encoders; JEPA uses an EMA target (0.996) and VICReg weights $(1, 0.04)$. Stage 
 128, lr $10^{-3}$ cosine, belief width 256 and decoder width 512 for size M. Everything ran on one
 laptop GPU with 4 GB of memory (RTX 3050 Ti). A stage-1 run takes about 25 minutes, a stage-2 run
 about 20 minutes, and the full evaluation of one model about 10 minutes.
+
+\section{Additional results}
+\label{app:extra}
+
+\begin{figure*}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{fig_world.pdf}
+\caption{The world and open predictions for three test episodes. For each episode: ground truth,
+REC and JEPA (three context frames, then predicted frames decoded by the post-hoc readout decoder).
+Materials tint the background; gravity is only visible through motion. In these examples the
+single-object episode is predicted sharply, while with two or three objects the decoded
+predictions blur within about ten frames. The models are competent by the pre-registered gate, not
+accurate in every episode.}
+\label{fig:world}
+\end{figure*}
+
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.6\textwidth]{fig_lambda.pdf}
+\caption{Exploratory law fraction $\lambda$ by intervention (1 = law, 0 = clamp).}
+\label{fig:lambda}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.6\textwidth]{fig_controls.pdf}
+\caption{Controls: LRU core and WIDE training range (single seed).}
+\label{fig:controls}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.6\textwidth]{fig_drift.pdf}
+\caption{Conservation drift under chunked autoregression (conservative episodes).}
+\label{fig:drift}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.6\textwidth]{fig_probes.pdf}
+\caption{Linear probes on the belief $h_C$ (fit on validation, scored on test).}
+\label{fig:probes}
+\end{figure}
+
+\begin{figure*}[h]
+\centering
+\includegraphics[width=\textwidth]{fig_scaling.pdf}
+\caption{Scaling. Left: natural $\rho_{\rm hi}$ against training episodes (2 seeds). Middle: against
+dynamics size (1 seed). Right: in-range 20-frame error against training episodes.}
+\label{fig:scaling}
+\end{figure*}
+
+\subsection{Drift and velocity edits (E4, E5)}
+
+Under chunked autoregression on conservative episodes, the median relative energy error grows
+from \StateDriftOne{} in the first 20 frames to \StateDriftFour{} by frames 60--80 for STATE
+(REC \RecDriftOne{} to \RecDriftFour; JEPA \JepaDriftOne{} to \JepaDriftFour): no family conserves
+energy over a few bounces. Velocity edits along a matched-pair $v_x$ direction fail outright (CER
+\StateVxCer{} for STATE): we found no linear handle on horizontal velocity.
+
+\subsection{Other distribution shifts}
+The 20-frame error rises from \StateErrTest/\RecErrTest/\JepaErrTest{} px (STATE/REC/JEPA) in
+distribution to \StateCountErr/\RecCountErr/\JepaCountErr{} px with four or five objects,
+\StateSpeedErr/\RecSpeedErr/\JepaSpeedErr{} px at high speed and
+\StateMassErr/\RecMassErr/\JepaMassErr{} px at extreme mass ratios (matched in-range control:
+\StateMassCtrlErr/\RecMassCtrlErr/\JepaMassCtrlErr).
+
+\subsection{A frozen video foundation model on the same world}
+As an outside reference, we passed our ten context frames (upsampled to $256{\times}256$) through
+a frozen V-JEPA~2 ViT-L encoder \citep{assran2025vjepa2}, which has never seen this world, and fit a
+ridge probe for gravity on the mean-pooled features of \VjN{} validation episodes. Cross-validated
+$R^2$ is \VjRtwo, close to our pixel families. On the gravity sweep the probe's in-range slope is
+\VjSlope{} and its normalized out-of-range slopes are \VjRhoHi{} (high) and \VjRhoLo{} (low). Two
+things follow. Gravity in this world is linearly readable from generic video features about as well
+as from beliefs trained to predict it, which is Proposition~\ref{prop:decode} seen from the other
+side: decodability is cheap. And a probe fit in range under-reads out-of-range gravity by a similar
+factor on features that carry no belief at all. The under-reading in \Cref{fig:locus}(b) may
+therefore partly reflect how any representation's code for gravity bends outside the range a linear
+probe was fit on, and not only what our models believe. This is not an evaluation of V-JEPA~2.
+
+\begin{table}[h]
+\centering\small
+\caption{Confirmatory tests (one-sided hierarchical bootstrap, Holm-corrected).}
+\label{tab:hyp}
+\input{tables_hyp}
+\end{table}
 
 \subsection{Per-configuration statistics}
 \input{tables_cfg}
